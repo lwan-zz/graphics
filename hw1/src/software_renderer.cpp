@@ -244,6 +244,101 @@ void SoftwareRendererImp::rasterize_line( float x0, float y0,
 
   // Task 2: 
   // Implement line rasterization
+  x0 = floor(x0);
+  y0 = floor(y0);
+  x1 = floor(x1);
+  y1 = floor(y1);
+
+  float dx = x1 - x0;
+  float dy = y1 - y0;
+  float xval = x0;
+  float yval = y0;
+  float eps = 0;
+  float xstep, ystep;
+
+  cout << "(" << x0 << "," << y0 << ")" << " to " << "(" << x1 << "," << y1 << ")" << endl;
+  //getchar();
+
+  // figure out direction of slope, ystep or xstep depending on dy, dx
+  if (dx < 0)
+  {
+    dx = -dx;
+    xstep = -1;
+
+  }
+  else xstep = 1;
+
+  if (dy < 0)
+  {
+    dy = -dy;
+    ystep = -1;
+  }
+  else ystep = 1;
+
+  rasterize_point(xval, yval, color); // plot first point
+
+  if (dx == 0)
+  {
+    color.r = 0;
+    color.g = 0;
+    color.b = 1;
+    cout << "vertical line" << endl;
+    while (yval != y1)
+    {
+      yval += ystep;
+      rasterize_point(xval, yval, color);
+    }
+    cout << yval - y0 << " steps taken in y" << endl;
+  }
+
+  float m  = abs(dy / dx); // need to handle /0
+  if (dx > dy)
+  {
+    color.r = 1;
+    color.g = 0;
+    color.b = 0;
+    cout << "xstep" << endl;
+    while (xval != x1)
+    {
+      xval += xstep;
+      if (eps + m >= 0.5)
+      {
+        yval += ystep;
+        eps = eps + m - 1;
+      }
+      else 
+      {
+        eps += m;
+      }
+      //cout << "(" << xval << "," << yval << ")" << endl;
+      rasterize_point(xval, yval, color);
+    }
+    cout << xval - x0 << " steps taken in x" << endl; 
+  }
+  else 
+  {
+    color.r = 0;
+    color.g = 1;
+    color.b = 0;
+    cout << "ystep" << endl;
+    while (yval != y1)
+    {
+      yval += ystep;
+      if (eps + (1 / m) >= 0.5)
+      {
+        xval += xstep;
+        eps = eps + (1 / m) - 1;
+        
+      }
+      else
+      {
+        eps += (1 / m); 
+      }
+      //cout << "(" << xval << "," << yval << ")" << endl;
+      rasterize_point(xval, yval, color);
+    }
+    cout << yval - y0 << " steps taken in y" << endl;
+  }
 }
 
 void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
