@@ -80,6 +80,13 @@ class SoftwareRendererImp : public SoftwareRenderer {
 
  private:
 
+
+  bool start_flag;
+  bool firstel_flag;
+  std::vector<unsigned char> big_buffer; int w; int h;
+
+  // final output target for display
+  unsigned char* display_target;
   // Primitive Drawing //
 
   // Draws an SVG element

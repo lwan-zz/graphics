@@ -45,7 +45,11 @@ void SoftwareRendererImp::set_sample_rate( size_t sample_rate ) {
   // Task 4: 
   // You may want to modify this for supersampling support
   this->sample_rate = sample_rate;
+  cout << "sample rate: " << sample_rate << endl;
 
+  this->big_buffer.resize(4 * this->w * sample_rate * this->h * sample_rate);
+  cout << "resized big buffer to: " << this->big_buffer.size() << endl;
+  this->set_render_target(&(this->big_buffer[0]), this->w * sample_rate, this->h * sample_rate);
 }
 
 void SoftwareRendererImp::set_render_target( unsigned char* render_target,
@@ -53,6 +57,16 @@ void SoftwareRendererImp::set_render_target( unsigned char* render_target,
 
   // Task 4: 
   // You may want to modify this for supersampling support
+  cout << "new width, height: " << width << " " << height << endl;
+
+  if (!(this->start_flag)) {
+    cout << "setting initial width, height" << endl;
+    start_flag = true;
+    this->w = width;
+    this->h = height;
+    this->display_target = render_target;
+  }
+
   this->render_target = render_target;
   this->target_w = width;
   this->target_h = height;
@@ -241,6 +255,14 @@ void SoftwareRendererImp::rasterize_point( float x, float y, Color color ) {
 void SoftwareRendererImp::rasterize_line( float x0, float y0,
                                           float x1, float y1,
                                           Color color) {
+  x0 *= this->sample_rate;
+  y0 *= this->sample_rate;
+  x1 *= this->sample_rate;
+  y1 *= this->sample_rate;
+
+  if (!(this->firstel_flag)) {
+    cout << "line1 dims: (" << x0 << ", " << y0 << ") (" << x1 << ", " << y1 << ")" << endl;
+  }
 
   // Task 2: 
   // Implement line rasterization
@@ -256,16 +278,20 @@ void SoftwareRendererImp::rasterize_line( float x0, float y0,
   float eps = 0;
   float xstep, ystep;
 
+  if (this->sample_rate > 1) {
+    color.r = 1;
+    color.g = 0;
+    color.b = 0;
+  }
+
   // figure out direction of slope, ystep or xstep depending on dy, dx
-  if (dx < 0)
-  {
+  if (dx < 0) {
     dx = -dx;
     xstep = -1;
   }
   else xstep = 1;
 
-  if (dy < 0)
-  {
+  if (dy < 0) {
     dy = -dy;
     ystep = -1;
   }
@@ -273,23 +299,19 @@ void SoftwareRendererImp::rasterize_line( float x0, float y0,
 
   rasterize_point(xval, yval, color); // plot first point
 
-  if (dx == 0) // vertical line
-  {
-    while (yval != y1)
-    {
+  // vertical line
+  if (dx == 0) {
+    while (yval != y1) {
       yval += ystep;
       rasterize_point(xval, yval, color);
     }
   }
 
   float m  = abs(dy / dx); 
-  if (dx > dy)
-  {
-    while (xval != x1)
-    {
+  if (dx > dy) {
+    while (xval != x1) {
       xval += xstep;
-      if (eps + m >= 0.5)
-      {
+      if (eps + m >= 0.5) {
         yval += ystep;
         eps = eps + m - 1;
       }
@@ -297,13 +319,10 @@ void SoftwareRendererImp::rasterize_line( float x0, float y0,
       rasterize_point(xval, yval, color);
     }
   }
-  else 
-  {
-    while (yval != y1)
-    {
+  else {
+    while (yval != y1) {
       yval += ystep;
-      if (eps + (1 / m) >= 0.5)
-      {
+      if (eps + (1 / m) >= 0.5) {
         xval += xstep;
         eps = eps + (1 / m) - 1;
       }
@@ -337,12 +356,9 @@ void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
   vector<float> E_vals = {0, 0, 0};
 
   // loop through points inside bounding box
-  for(int y_idx = y_min; y_idx <= y_max; y_idx++)
-  {
-    for(int x_idx = x_min; x_idx <= x_max; x_idx++)
-    {
-      for(int vertex_idx = 0; vertex_idx != x_deltas.size(); vertex_idx++)
-      {
+  for(int y_idx = y_min; y_idx <= y_max; y_idx++) {
+    for(int x_idx = x_min; x_idx <= x_max; x_idx++) {
+      for(int vertex_idx = 0; vertex_idx != x_deltas.size(); vertex_idx++) {
         E_vals[vertex_idx] = (x_idx - x_vals[vertex_idx]) * y_deltas[vertex_idx] - 
                              (y_idx - y_vals[vertex_idx]) * x_deltas[vertex_idx];
         if(E_vals[vertex_idx] > 0) break; //early exit
@@ -366,8 +382,63 @@ void SoftwareRendererImp::resolve( void ) {
   // Task 4: 
   // Implement supersampling
   // You may also need to modify other functions marked with "Task 4".
-  return;
+  // fill sample - NOT doing alpha blending!
+  cout << "resolving" << endl;
+  cout << "input size:  (" << this->target_w << ", " << this->target_h << ")" << endl;
+  cout << "output size: (" << this->w << ", " << this->h << ")" << endl;
+  cout << "sample_rate: " << sample_rate << endl;
 
+  //int display_h_idx = 0;
+  for (int target_h_idx = 0; target_h_idx != target_h; target_h_idx += sample_rate ) {
+    //
+    for (int target_w_idx = 0; target_w_idx != target_w; target_w_idx += sample_rate ) {
+      
+      int red = 0;
+      int green = 0;
+      int blue = 0;
+      int alpha = 0;
+      //cout << "Target idx: (" << target_w_idx << ", " << target_h_idx << ")" << endl;
+      
+      for (int box_h_idx = target_h_idx; box_h_idx != target_h_idx + sample_rate; box_h_idx++ ) {
+        for (int box_w_idx = target_w_idx; box_w_idx != target_w_idx + sample_rate; box_w_idx++ ) {
+          red   += render_target[4 * (box_w_idx + box_h_idx * target_w)    ];
+          green += render_target[4 * (box_w_idx + box_h_idx * target_w) + 1];
+          blue  += render_target[4 * (box_w_idx + box_h_idx * target_w) + 2];
+          alpha += render_target[4 * (box_w_idx + box_h_idx * target_w) + 3];
+        }
+      }
+
+      red   /= pow(sample_rate, 2);
+      green /= pow(sample_rate, 2);
+      blue  /= pow(sample_rate, 2);
+      alpha /= pow(sample_rate, 2);
+
+      int display_w_idx = target_w_idx / sample_rate;
+      int display_h_idx = target_h_idx / sample_rate;
+      
+      /*
+      if (sample_rate > 1) {
+        cout << "Target ids: (" << target_w_idx << ", " << target_h_idx << ") to (" 
+             << target_w_idx + sample_rate - 1 << ", " << target_h_idx + sample_rate -1 << ")" << endl;
+        cout << "Display idx: (" << display_w_idx << ", " << display_h_idx << ")" << endl;
+      }
+      */
+      
+      this->display_target[4 * (display_w_idx + display_h_idx * w)    ] = (uint8_t) (red);
+      this->display_target[4 * (display_w_idx + display_h_idx * w) + 1] = (uint8_t) (green);
+      this->display_target[4 * (display_w_idx + display_h_idx * w) + 2] = (uint8_t) (blue);
+      this->display_target[4 * (display_w_idx + display_h_idx * w) + 3] = (uint8_t) (alpha);  
+
+      //display_w_idx += 1;
+    }
+
+    //display_h_idx += 1;
+    //cout << "Display idx: (" << display_w_idx << ", " << display_h_idx << ")" << endl;
+  }
+
+
+  cout << "resolved" << endl;
+  return;
 }
 
 
