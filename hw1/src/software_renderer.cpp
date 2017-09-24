@@ -45,10 +45,8 @@ void SoftwareRendererImp::set_sample_rate( size_t sample_rate ) {
   // Task 4: 
   // You may want to modify this for supersampling support
   this->sample_rate = sample_rate;
-  cout << "sample rate: " << sample_rate << endl;
-
+  this->big_buffer.clear();
   this->big_buffer.resize(4 * this->w * sample_rate * this->h * sample_rate);
-  cout << "resized big buffer to: " << this->big_buffer.size() << endl;
   this->set_render_target(&(this->big_buffer[0]), this->w * sample_rate, this->h * sample_rate);
 }
 
@@ -57,10 +55,8 @@ void SoftwareRendererImp::set_render_target( unsigned char* render_target,
 
   // Task 4: 
   // You may want to modify this for supersampling support
-  cout << "new width, height: " << width << " " << height << endl;
 
   if (!(this->start_flag)) {
-    cout << "setting initial width, height" << endl;
     start_flag = true;
     this->w = width;
     this->h = height;
@@ -233,6 +229,18 @@ void SoftwareRendererImp::draw_group( Group& group ) {
 
 // The input arguments in the rasterization functions 
 // below are all defined in screen space coordinates
+void SoftwareRendererImp::render_point( int sx, int sy, Color color ) {
+    // fill sample - NOT doing alpha blending!
+  // check bounds
+  if ( sx < 0 || sx >= target_w ) return;
+  if ( sy < 0 || sy >= target_h ) return;
+
+  render_target[4 * (sx + sy * target_w)    ] = (uint8_t) (color.r * 255);
+  render_target[4 * (sx + sy * target_w) + 1] = (uint8_t) (color.g * 255);
+  render_target[4 * (sx + sy * target_w) + 2] = (uint8_t) (color.b * 255);
+  render_target[4 * (sx + sy * target_w) + 3] = (uint8_t) (color.a * 255);
+
+}
 
 void SoftwareRendererImp::rasterize_point( float x, float y, Color color ) {
 
@@ -240,15 +248,11 @@ void SoftwareRendererImp::rasterize_point( float x, float y, Color color ) {
   int sx = (int) floor(x);
   int sy = (int) floor(y);
 
-  // check bounds
-  if ( sx < 0 || sx >= target_w ) return;
-  if ( sy < 0 || sy >= target_h ) return;
-
-  // fill sample - NOT doing alpha blending!
-  render_target[4 * (sx + sy * target_w)    ] = (uint8_t) (color.r * 255);
-  render_target[4 * (sx + sy * target_w) + 1] = (uint8_t) (color.g * 255);
-  render_target[4 * (sx + sy * target_w) + 2] = (uint8_t) (color.b * 255);
-  render_target[4 * (sx + sy * target_w) + 3] = (uint8_t) (color.a * 255);
+  for ( int y_idx = sy; y_idx != sy + sample_rate; y_idx++ ) {
+    for ( int x_idx = sx; x_idx != sx + sample_rate; x_idx++) {
+      render_point( x_idx, y_idx, color);    
+    }
+  }
 
 }
 
@@ -259,10 +263,6 @@ void SoftwareRendererImp::rasterize_line( float x0, float y0,
   y0 *= this->sample_rate;
   x1 *= this->sample_rate;
   y1 *= this->sample_rate;
-
-  if (!(this->firstel_flag)) {
-    cout << "line1 dims: (" << x0 << ", " << y0 << ") (" << x1 << ", " << y1 << ")" << endl;
-  }
 
   // Task 2: 
   // Implement line rasterization
@@ -277,12 +277,6 @@ void SoftwareRendererImp::rasterize_line( float x0, float y0,
   float yval = y0;
   float eps = 0;
   float xstep, ystep;
-
-  if (this->sample_rate > 1) {
-    color.r = 1;
-    color.g = 0;
-    color.b = 0;
-  }
 
   // figure out direction of slope, ystep or xstep depending on dy, dx
   if (dx < 0) {
@@ -339,6 +333,13 @@ void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
   // Task 3: 
   // Implement triangle rasterization
   // find max bounds of all points in triangle
+  x0 *= this->sample_rate;
+  y0 *= this->sample_rate;
+  x1 *= this->sample_rate;
+  y1 *= this->sample_rate;
+  x2 *= this->sample_rate;
+  y2 *= this->sample_rate;
+
   float x_min = min(x0, x1);
   float x_max = max(x0, x1);
   float y_min = min(y0, y1);
@@ -358,6 +359,7 @@ void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
   // loop through points inside bounding box
   for(int y_idx = y_min; y_idx <= y_max; y_idx++) {
     for(int x_idx = x_min; x_idx <= x_max; x_idx++) {
+      
       for(int vertex_idx = 0; vertex_idx != x_deltas.size(); vertex_idx++) {
         E_vals[vertex_idx] = (x_idx - x_vals[vertex_idx]) * y_deltas[vertex_idx] - 
                              (y_idx - y_vals[vertex_idx]) * x_deltas[vertex_idx];
@@ -383,22 +385,16 @@ void SoftwareRendererImp::resolve( void ) {
   // Implement supersampling
   // You may also need to modify other functions marked with "Task 4".
   // fill sample - NOT doing alpha blending!
-  cout << "resolving" << endl;
-  cout << "input size:  (" << this->target_w << ", " << this->target_h << ")" << endl;
-  cout << "output size: (" << this->w << ", " << this->h << ")" << endl;
-  cout << "sample_rate: " << sample_rate << endl;
 
-  //int display_h_idx = 0;
+  // go through bigbuffer and perform box filtering
   for (int target_h_idx = 0; target_h_idx != target_h; target_h_idx += sample_rate ) {
-    //
     for (int target_w_idx = 0; target_w_idx != target_w; target_w_idx += sample_rate ) {
-      
       int red = 0;
       int green = 0;
       int blue = 0;
       int alpha = 0;
-      //cout << "Target idx: (" << target_w_idx << ", " << target_h_idx << ")" << endl;
       
+      // perform convolution, assign value to coordinate in display_target
       for (int box_h_idx = target_h_idx; box_h_idx != target_h_idx + sample_rate; box_h_idx++ ) {
         for (int box_w_idx = target_w_idx; box_w_idx != target_w_idx + sample_rate; box_w_idx++ ) {
           red   += render_target[4 * (box_w_idx + box_h_idx * target_w)    ];
@@ -416,28 +412,13 @@ void SoftwareRendererImp::resolve( void ) {
       int display_w_idx = target_w_idx / sample_rate;
       int display_h_idx = target_h_idx / sample_rate;
       
-      /*
-      if (sample_rate > 1) {
-        cout << "Target ids: (" << target_w_idx << ", " << target_h_idx << ") to (" 
-             << target_w_idx + sample_rate - 1 << ", " << target_h_idx + sample_rate -1 << ")" << endl;
-        cout << "Display idx: (" << display_w_idx << ", " << display_h_idx << ")" << endl;
-      }
-      */
-      
       this->display_target[4 * (display_w_idx + display_h_idx * w)    ] = (uint8_t) (red);
       this->display_target[4 * (display_w_idx + display_h_idx * w) + 1] = (uint8_t) (green);
       this->display_target[4 * (display_w_idx + display_h_idx * w) + 2] = (uint8_t) (blue);
       this->display_target[4 * (display_w_idx + display_h_idx * w) + 3] = (uint8_t) (alpha);  
-
-      //display_w_idx += 1;
     }
-
-    //display_h_idx += 1;
-    //cout << "Display idx: (" << display_w_idx << ", " << display_h_idx << ")" << endl;
   }
 
-
-  cout << "resolved" << endl;
   return;
 }
 

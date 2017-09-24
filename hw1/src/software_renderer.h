@@ -140,6 +140,9 @@ class SoftwareRendererImp : public SoftwareRenderer {
   // resolve samples to render target
   void resolve( void );
 
+  void render_point( int sx, int sy, Color color );
+
+
 }; // class SoftwareRendererImp
 
 
