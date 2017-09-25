@@ -36,6 +36,9 @@ void Sampler2DImp::generate_mips(Texture& tex, int startLevel) {
   // Task 7: Implement this
 
   // check start level
+
+  cout << "generate_mips" << endl;
+
   if ( startLevel >= tex.mipmap.size() ) {
     std::cerr << "Invalid start level"; 
   }
@@ -110,6 +113,7 @@ Color Sampler2DImp::sample_bilinear(Texture& tex,
   // Task 6: Implement bilinear filtering
   if ( level < 0 || level > kMaxMipLevels ) {
     // return magenta for invalid level
+    cout << "bad level" << endl;
     return Color(1,0,1,1);
   }
   u *= tex.mipmap[level].width;
@@ -127,7 +131,7 @@ Color Sampler2DImp::sample_bilinear(Texture& tex,
       color.a += (float) 0.25 * tex.mipmap[level].texels[4 * (pixel_u_idx + pixel_v_idx * tex.mipmap[level].width) + 3] / 255.0;
     }
   }
-  
+
   return color;
 }
 

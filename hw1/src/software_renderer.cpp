@@ -54,7 +54,7 @@ void SoftwareRendererImp::set_sample_rate( size_t sample_rate ) {
 
 void SoftwareRendererImp::ugly_set_render_target( unsigned char* render_target,
                                              size_t width, size_t height ) {
-  cout << "ugly st rener" << endl; 
+  cout << "ugly set renderer" << endl; 
   this->render_target = render_target;
   this->target_w = width;
   this->target_h = height;
@@ -66,14 +66,6 @@ void SoftwareRendererImp::set_render_target( unsigned char* render_target,
   // Task 4: 
   // You may want to modify this for supersampling support
 
-  /*
-  if (!(this->start_flag)) {
-    start_flag = true;
-    this->w = width;
-    this->h = height;
-    this->display_target = render_target;
-  }
-  */
   // fix later
   cout << "set render traget" << endl;
   this->w = width;
@@ -85,15 +77,6 @@ void SoftwareRendererImp::set_render_target( unsigned char* render_target,
 
 }
 
-std::vector<Vector2D> SoftwareRendererImp::transform_points( vector<Vector2D>& points ) {
-  cout << "transform_points" << endl;
-  for (vector<Vector2D>::iterator pt_iter = points.begin(); 
-       pt_iter != points.end() ; 
-       pt_iter++ ) {
-    *pt_iter = transform(*pt_iter);
-  }
-  return points;
-}
 
 void SoftwareRendererImp::draw_element( SVGElement* element ) {
 
@@ -270,7 +253,28 @@ void SoftwareRendererImp::render_point( int sx, int sy, Color color ) {
   if ( sx < 0 || sx >= target_w ) return;
   if ( sy < 0 || sy >= target_h ) return;
 
-  
+  if ( color.a < 1) {
+    Color canvas;
+    canvas.r = (float) render_target[4 * (sx + sy * target_w)    ] / 255;
+    canvas.g = (float) render_target[4 * (sx + sy * target_w) + 1] / 255;
+    canvas.b = (float) render_target[4 * (sx + sy * target_w) + 2] / 255;
+    canvas.a = (float) render_target[4 * (sx + sy * target_w) + 3] / 255;
+
+    //cout << canvas.r << " " << canvas.g << " " << canvas.b << " " << canvas.a << endl;
+    canvas.r *= canvas.a;
+    canvas.g *= canvas.a;
+    canvas.b *= canvas.a;
+
+    color.r *= color.a;
+    color.g *= color.a;
+    color.b *= color.a;
+    //cout << color.r << " " << color.g << " " << color.b << " " << color.a << endl;
+    
+    color.r = color.r + (1 - color.a) * canvas.r;
+    color.g = color.g + (1 - color.a) * canvas.g;
+    color.b = color.b + (1 - color.a) * canvas.b;
+    color.a = color.a + (1 - color.a) * canvas.a;
+  }
 
   render_target[4 * (sx + sy * target_w)    ] = (uint8_t) (color.r * 255);
   render_target[4 * (sx + sy * target_w) + 1] = (uint8_t) (color.g * 255);
@@ -385,7 +389,7 @@ void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
   x_min = (min(x_min, x2));
   x_max = (max(x_max, x2));
   y_min = (min(y_min, y2));
-  y_max = (max(y_max, y2));
+  y_max = (max(y_max, y2)); 
 
   vector<float> x_vals = {x0, x1, x2};
   vector<float> y_vals = {y0, y1, y2};
@@ -413,6 +417,11 @@ void SoftwareRendererImp::rasterize_image( float x0, float y0,
                                            Texture& tex ) {
   // Task 6: 
   // Implement image rasterization
+  x0 *= this->sample_rate;
+  y0 *= this->sample_rate;
+  x1 *= this->sample_rate;
+  y1 *= this->sample_rate;
+
   for (float x_idx = x0; x_idx < x1; x_idx++) {
     for (float y_idx = y0; y_idx < y1; y_idx++) {
       // map to [0,1] coordinates
@@ -437,35 +446,38 @@ void SoftwareRendererImp::resolve( void ) {
   // fill sample - NOT doing alpha blending!
 
   // go through bigbuffer and perform box filtering
+  cout << "resolve" << endl; 
+  Color color_source;
+  Color color_canvas;
+
   for (int target_h_idx = 0; target_h_idx != target_h; target_h_idx += sample_rate ) {
     for (int target_w_idx = 0; target_w_idx != target_w; target_w_idx += sample_rate ) {
-      int red = 0;
-      int green = 0;
-      int blue = 0;
-      int alpha = 0;
+      color_source.r = 0;
+      color_source.g = 0;
+      color_source.b = 0;
+      color_source.a = 0;
       
       // perform convolution, assign value to coordinate in display_target
       for (int box_h_idx = target_h_idx; box_h_idx != target_h_idx + sample_rate; box_h_idx++ ) {
         for (int box_w_idx = target_w_idx; box_w_idx != target_w_idx + sample_rate; box_w_idx++ ) {
-          red   += render_target[4 * (box_w_idx + box_h_idx * target_w)    ];
-          green += render_target[4 * (box_w_idx + box_h_idx * target_w) + 1];
-          blue  += render_target[4 * (box_w_idx + box_h_idx * target_w) + 2];
-          alpha += render_target[4 * (box_w_idx + box_h_idx * target_w) + 3];
+          color_source.r += (float) render_target[4 * (box_w_idx + box_h_idx * target_w)    ];
+          color_source.g += (float) render_target[4 * (box_w_idx + box_h_idx * target_w) + 1];
+          color_source.b += (float) render_target[4 * (box_w_idx + box_h_idx * target_w) + 2];
+          color_source.a += (float) render_target[4 * (box_w_idx + box_h_idx * target_w) + 3];
         }
       }
-
-      red   /= pow(sample_rate, 2);
-      green /= pow(sample_rate, 2);
-      blue  /= pow(sample_rate, 2);
-      alpha /= pow(sample_rate, 2);
-
-      int display_w_idx = target_w_idx / sample_rate;
       int display_h_idx = target_h_idx / sample_rate;
+      int display_w_idx = target_w_idx / sample_rate;
       
-      this->display_target[4 * (display_w_idx + display_h_idx * w)    ] = (uint8_t) (red);
-      this->display_target[4 * (display_w_idx + display_h_idx * w) + 1] = (uint8_t) (green);
-      this->display_target[4 * (display_w_idx + display_h_idx * w) + 2] = (uint8_t) (blue);
-      this->display_target[4 * (display_w_idx + display_h_idx * w) + 3] = (uint8_t) (alpha);  
+      color_source.r = (color_source.r / pow(sample_rate, 2)) / 255;
+      color_source.g = (color_source.g / pow(sample_rate, 2)) / 255;
+      color_source.b = (color_source.b / pow(sample_rate, 2)) / 255;
+      color_source.a = (color_source.a / pow(sample_rate, 2)) / 255;
+
+      this->display_target[4 * (display_w_idx + display_h_idx * w)    ] = (uint8_t) (color_source.r * 255);
+      this->display_target[4 * (display_w_idx + display_h_idx * w) + 1] = (uint8_t) (color_source.g * 255);
+      this->display_target[4 * (display_w_idx + display_h_idx * w) + 2] = (uint8_t) (color_source.b * 255);
+      this->display_target[4 * (display_w_idx + display_h_idx * w) + 3] = (uint8_t) (color_source.a * 255);  
     }
   }
 
