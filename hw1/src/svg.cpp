@@ -67,8 +67,8 @@ void SVGParser::parseSVG( XMLElement* xml, SVG* svg ) {
 
   XMLElement* elem = xml->FirstChildElement();
   while( elem ) {
-
     string elementType ( elem->Value() );
+    // cout << "elementType" << elementType << endl;
     if( elementType == "line" ) {
 
       Line* line = new Line();

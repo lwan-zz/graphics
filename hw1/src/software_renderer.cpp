@@ -18,10 +18,12 @@ void SoftwareRendererImp::draw_svg( SVG& svg ) {
 
   // set top level transformation
   transformation = canvas_to_screen;
+  group_transform = Matrix3x3::identity();
 
   // draw all elements
   for ( size_t i = 0; i < svg.elements.size(); ++i ) {
     draw_element(svg.elements[i]);
+    transformation = canvas_to_screen;
   }
 
   // draw canvas outline
@@ -69,34 +71,53 @@ void SoftwareRendererImp::set_render_target( unsigned char* render_target,
 
 }
 
+std::vector<Vector2D> SoftwareRendererImp::transform_points( vector<Vector2D>& points ) {
+  cout << "transform_points" << endl;
+  for (vector<Vector2D>::iterator pt_iter = points.begin(); 
+       pt_iter != points.end() ; 
+       pt_iter++ ) {
+    *pt_iter = transform(*pt_iter);
+  }
+  return points;
+}
+
 void SoftwareRendererImp::draw_element( SVGElement* element ) {
 
   // Task 5 (part 1):
   // Modify this to implement the transformation stack
-
+  
+  transformation = transformation * element->transform;
+  
   switch(element->type) {
     case POINT:
       draw_point(static_cast<Point&>(*element));
+      transformation = group_transform;
       break;
     case LINE:
       draw_line(static_cast<Line&>(*element));
+      transformation = group_transform;
       break;
     case POLYLINE:
       draw_polyline(static_cast<Polyline&>(*element));
+      transformation = group_transform;
       break;
     case RECT:
       draw_rect(static_cast<Rect&>(*element));
+      transformation = group_transform;
       break;
     case POLYGON:
       draw_polygon(static_cast<Polygon&>(*element));
+      transformation = group_transform;
       break;
     case ELLIPSE:
       draw_ellipse(static_cast<Ellipse&>(*element));
+      transformation = group_transform;
       break;
     case IMAGE:
       draw_image(static_cast<Image&>(*element));
       break;
     case GROUP:
+      group_transform = canvas_to_screen * element->transform;
       draw_group(static_cast<Group&>(*element));
       break;
     default:
@@ -363,9 +384,10 @@ void SoftwareRendererImp::rasterize_triangle( float x0, float y0,
       for(int vertex_idx = 0; vertex_idx != x_deltas.size(); vertex_idx++) {
         E_vals[vertex_idx] = (x_idx - x_vals[vertex_idx]) * y_deltas[vertex_idx] - 
                              (y_idx - y_vals[vertex_idx]) * x_deltas[vertex_idx];
-        if(E_vals[vertex_idx] > 0) break; //early exit
+        //if(E_vals[vertex_idx] > 0) break; //early exit
       }
       if (E_vals[0] <= 0 && E_vals[1] <= 0 && E_vals[2] <= 0) rasterize_point(x_idx, y_idx, color);
+      if (E_vals[0] >= 0 && E_vals[1] >= 0 && E_vals[2] >= 0) rasterize_point(x_idx, y_idx, color);
     } 
   }
 }

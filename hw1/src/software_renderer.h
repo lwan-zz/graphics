@@ -59,6 +59,7 @@ class SoftwareRenderer : public SVGRenderer {
 
   // SVG coordinates to screen space coordinates
   Matrix3x3 canvas_to_screen;
+  Matrix3x3 group_transform;
 
 }; // class SoftwareRenderer
 
@@ -88,6 +89,9 @@ class SoftwareRendererImp : public SoftwareRenderer {
   // final output target for display
   unsigned char* display_target;
   // Primitive Drawing //
+
+  // transform vector of vector2d points
+  std::vector<Vector2D> transform_points( std::vector<Vector2D>& points );
 
   // Draws an SVG element
   void draw_element( SVGElement* element );
