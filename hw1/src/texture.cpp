@@ -108,10 +108,27 @@ Color Sampler2DImp::sample_bilinear(Texture& tex,
                                     int level) {
   
   // Task 6: Implement bilinear filtering
+  if ( level < 0 || level > kMaxMipLevels ) {
+    // return magenta for invalid level
+    return Color(1,0,1,1);
+  }
+  u *= tex.mipmap[level].width;
+  v *= tex.mipmap[level].height;
 
-  // return magenta for invalid level
-  return Color(1,0,1,1);
+  int pixel_u = floor(u);
+  int pixel_v = floor(v);
+  Color color = (0, 0, 0, 0);
 
+  for (int pixel_u_idx = pixel_u; pixel_u_idx != pixel_u + 2; pixel_u_idx++ ) {
+    for (int pixel_v_idx = pixel_v; pixel_v_idx != pixel_v + 2; pixel_v_idx++ ) {
+      color.r += (float) 0.25 * tex.mipmap[level].texels[4 * (pixel_u_idx + pixel_v_idx * tex.mipmap[level].width)    ] / 255.0;
+      color.g += (float) 0.25 * tex.mipmap[level].texels[4 * (pixel_u_idx + pixel_v_idx * tex.mipmap[level].width) + 1] / 255.0;
+      color.b += (float) 0.25 * tex.mipmap[level].texels[4 * (pixel_u_idx + pixel_v_idx * tex.mipmap[level].width) + 2] / 255.0;
+      color.a += (float) 0.25 * tex.mipmap[level].texels[4 * (pixel_u_idx + pixel_v_idx * tex.mipmap[level].width) + 3] / 255.0;
+    }
+  }
+  
+  return color;
 }
 
 Color Sampler2DImp::sample_trilinear(Texture& tex, 
