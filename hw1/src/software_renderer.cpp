@@ -270,6 +270,8 @@ void SoftwareRendererImp::render_point( int sx, int sy, Color color ) {
   if ( sx < 0 || sx >= target_w ) return;
   if ( sy < 0 || sy >= target_h ) return;
 
+  
+
   render_target[4 * (sx + sy * target_w)    ] = (uint8_t) (color.r * 255);
   render_target[4 * (sx + sy * target_w) + 1] = (uint8_t) (color.g * 255);
   render_target[4 * (sx + sy * target_w) + 2] = (uint8_t) (color.b * 255);
@@ -411,8 +413,20 @@ void SoftwareRendererImp::rasterize_image( float x0, float y0,
                                            Texture& tex ) {
   // Task 6: 
   // Implement image rasterization
+  for (float x_idx = x0; x_idx < x1; x_idx++) {
+    for (float y_idx = y0; y_idx < y1; y_idx++) {
+      // map to [0,1] coordinates
+      float x_map = (x_idx - x0) / (x1 - x0);
+      float y_map = (y_idx - y0) / (y1 - y0);
+      Color color = sampler->sample_nearest(tex, x_map, y_map, 0);
+      //cout << color.r << " " << color.g << " " << color.b << " " << color.a << endl;
+      rasterize_point(x_idx, y_idx, color );
+    }
+  }
 
 }
+
+
 
 // resolve samples to render target
 void SoftwareRendererImp::resolve( void ) {
