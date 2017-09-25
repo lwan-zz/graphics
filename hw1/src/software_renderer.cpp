@@ -49,7 +49,15 @@ void SoftwareRendererImp::set_sample_rate( size_t sample_rate ) {
   this->sample_rate = sample_rate;
   this->big_buffer.clear();
   this->big_buffer.resize(4 * this->w * sample_rate * this->h * sample_rate);
-  this->set_render_target(&(this->big_buffer[0]), this->w * sample_rate, this->h * sample_rate);
+  this->ugly_set_render_target(&(this->big_buffer[0]), this->w * sample_rate, this->h * sample_rate);
+}
+
+void SoftwareRendererImp::ugly_set_render_target( unsigned char* render_target,
+                                             size_t width, size_t height ) {
+  cout << "ugly st rener" << endl; 
+  this->render_target = render_target;
+  this->target_w = width;
+  this->target_h = height;
 }
 
 void SoftwareRendererImp::set_render_target( unsigned char* render_target,
@@ -58,13 +66,19 @@ void SoftwareRendererImp::set_render_target( unsigned char* render_target,
   // Task 4: 
   // You may want to modify this for supersampling support
 
+  /*
   if (!(this->start_flag)) {
     start_flag = true;
     this->w = width;
     this->h = height;
     this->display_target = render_target;
   }
-
+  */
+  // fix later
+  cout << "set render traget" << endl;
+  this->w = width;
+  this->h = height;
+  this->display_target = render_target;
   this->render_target = render_target;
   this->target_w = width;
   this->target_h = height;

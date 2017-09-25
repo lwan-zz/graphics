@@ -78,6 +78,9 @@ class SoftwareRendererImp : public SoftwareRenderer {
   // set render target
   void set_render_target( unsigned char* target_buffer,
                           size_t width, size_t height );
+  // didn't realize reisze also called set_render_target
+  void ugly_set_render_target( unsigned char* target_buffer,
+                          size_t width, size_t height );
 
  private:
 
