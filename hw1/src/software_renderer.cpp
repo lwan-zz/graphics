@@ -427,8 +427,19 @@ void SoftwareRendererImp::rasterize_image( float x0, float y0,
       // map to [0,1] coordinates
       float x_map = (x_idx - x0) / (x1 - x0);
       float y_map = (y_idx - y0) / (y1 - y0);
-      Color color = sampler->sample_bilinear(tex, x_map, y_map, 0);
-      //cout << color.r << " " << color.g << " " << color.b << " " << color.a << endl;
+      
+      // second set, delta = 1 in x,y directions mapped to u,v space
+      float x_map_x = (x_idx + 1 - x0) / (x1 - x0);
+      float y_map_y = (y_idx + 1 - y0) / (y1 - y0);
+
+      // compute scale in u, v
+      float u_scale = x_map_x - x_map ;
+      float v_scale = y_map_y - y_map;
+
+      // filter 
+      //Color color = sampler->sample_bilinear(tex, x_map, y_map, 0);
+      Color color = sampler->sample_trilinear(tex, x_map, y_map, u_scale, v_scale);
+      
       rasterize_point(x_idx, y_idx, color );
     }
   }
