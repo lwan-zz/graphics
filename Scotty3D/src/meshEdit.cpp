@@ -38,6 +38,7 @@ FaceIter HalfedgeMesh::eraseVertex(VertexIter v) {
   // This method should replace the given vertex and all its neighboring
   // edges and faces with a single face, returning the new face.
 
+
   return FaceIter();
 }
 
@@ -55,8 +56,59 @@ EdgeIter HalfedgeMesh::flipEdge(EdgeIter e0) {
   // This method should flip the given edge and return an iterator to the
   // flipped edge.
 
-  showError("flipEdge() not implemented.");
-  return EdgeIter();
+  /*
+  HalfedgeIter h = e0->halfedge();
+  h->getInfo();
+  HalfedgeIter ht = h->twin();
+  
+  // save the next() halfedge, vertex the flipped edge will connect to
+  HalfedgeIter h_next = h ->next();
+  HalfedgeIter ht_next = ht->next();
+
+  VertexIter h_next_v = h ->next()->next()->vertex();
+  VertexIter ht_next_v = ht ->next()->next()->vertex();
+
+  // connect halfedges
+  ht_next->next() = h;
+  h_next->next() = ht;
+
+  h ->next() = h_next;
+  ht->next() = ht_next;
+  
+
+  // assign vertices
+  h->vertex() = ht_next_v;
+  ht->vertex() = ;
+  */
+
+  //h->setNeighbors(h->next(), h->twin(), vi, ei, fi);
+  // reassign attributes of flipped halfedge
+
+  // make 2 new faces and iterate and assign halfedges to each face
+  FaceIter h_face = newFace();
+  FaceIter ht_face = newFace();
+
+  HalfedgeIter new_halfedge_iter = h;
+  HalfedgeIter new_halfedge_twin_iter = ht;
+
+  do {
+    h->setNeighbors(h->next(), h->twin(), h->vertex(), h->edge(), h_face);
+    cout << "reassigning face" << endl;
+    new_halfedge_iter = new_halfedge_iter->next();
+  } while (new_halfedge_iter != h);
+
+  do {
+    ht->setNeighbors(ht->next(), ht->twin(), ht->vertex(), ht->edge(), ht_face);
+    cout << "reassigning twin face" << endl;
+    new_halfedge_twin_iter = new_halfedge_twin_iter->next();
+  } while (new_halfedge_twin_iter != ht);
+
+  // reassign attributes of flipped halfedge twin
+
+  //showError("flipEdge() not implemented.");
+
+  cout << "done flipping" << endl;
+  return h->edge();
 }
 
 void HalfedgeMesh::subdivideQuad(bool useCatmullClark) {
@@ -281,6 +333,28 @@ FaceIter HalfedgeMesh::bevelFace(FaceIter f) {
   // positions.  These positions will be updated in
   // HalfedgeMesh::bevelFaceComputeNewPositions (which you also have to
   // implement!)
+  HalfedgeIter h = f->halfedge();
+
+  do {
+    VertexCIter v = h->vertex();
+    
+    // Allocate new elements for two pairs of half-edges. One to connect to the 
+    // original vertices, and one to connect to next 
+    HalfedgeIter he = newHalfedge();
+    VertexIter vi = newVertex();
+    EdgeIter ei = newEdge();
+    FaceIter fi = newFace();
+
+    HalfedgeIter twin = newHalfedge();
+
+    
+    //he->setNeighbors(h, twin, vi, ei, fi);
+
+
+    
+    cout << v->position << endl;
+    h = h->next();
+  } while (h != f->halfedge());
 
   showError("bevelFace() not implemented.");
   return facesBegin();
