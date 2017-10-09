@@ -52,63 +52,64 @@ FaceIter HalfedgeMesh::eraseEdge(EdgeIter e) {
 }
 
 EdgeIter HalfedgeMesh::flipEdge(EdgeIter e0) {
-  // TODO: (meshEdit)
   // This method should flip the given edge and return an iterator to the
   // flipped edge.
 
-  /*
-  HalfedgeIter h = e0->halfedge();
-  h->getInfo();
-  HalfedgeIter ht = h->twin();
-  
-  // save the next() halfedge, vertex the flipped edge will connect to
-  HalfedgeIter h_next = h ->next();
-  HalfedgeIter ht_next = ht->next();
+  // walk along halfedge, halfedge twin and accumulate all halfedges on faces
+  // TODO: early exit if boundary
+  vector<HalfedgeIter> he_face;
+  vector<HalfedgeIter> he_twin_face;
 
-  VertexIter h_next_v = h ->next()->next()->vertex();
-  VertexIter ht_next_v = ht ->next()->next()->vertex();
-
-  // connect halfedges
-  ht_next->next() = h;
-  h_next->next() = ht;
-
-  h ->next() = h_next;
-  ht->next() = ht_next;
-  
-
-  // assign vertices
-  h->vertex() = ht_next_v;
-  ht->vertex() = ;
-  */
-
-  //h->setNeighbors(h->next(), h->twin(), vi, ei, fi);
-  // reassign attributes of flipped halfedge
-
-  // make 2 new faces and iterate and assign halfedges to each face
-  FaceIter h_face = newFace();
-  FaceIter ht_face = newFace();
-
-  HalfedgeIter new_halfedge_iter = h;
-  HalfedgeIter new_halfedge_twin_iter = ht;
+  HalfedgeIter he = e0->halfedge();
+  HalfedgeIter he_twin = he->twin();
 
   do {
-    h->setNeighbors(h->next(), h->twin(), h->vertex(), h->edge(), h_face);
-    cout << "reassigning face" << endl;
-    new_halfedge_iter = new_halfedge_iter->next();
-  } while (new_halfedge_iter != h);
+    HalfedgeIter he_face_temp = he;
+    he_face.push_back(he_face_temp);
+    cout << "adding halfedge to he face vector" << endl;
+    he = he->next();
+  } while (he != e0->halfedge());
 
   do {
-    ht->setNeighbors(ht->next(), ht->twin(), ht->vertex(), ht->edge(), ht_face);
-    cout << "reassigning twin face" << endl;
-    new_halfedge_twin_iter = new_halfedge_twin_iter->next();
-  } while (new_halfedge_twin_iter != ht);
+    HalfedgeIter he_face_temp = he_twin;
+    he_twin_face.push_back(he_face_temp);
+    cout << "adding halfedge to he twin face vector" << endl;
+    he_twin = he_twin->next();
+  } while (he_twin != e0->halfedge()->twin());
 
-  // reassign attributes of flipped halfedge twin
+  // reconstruct twin face halfedges first
+  he_face[1]->next() = he_twin_face[0];
+  he_twin_face[0]->next() = he_twin_face[2];
+  he_twin_face.back()->next() = he_face[1];
+
+  // reconstruct selected halfedge face
+  he_twin_face[1]->next() = he_face[0];
+  he_face[0]->next() = he_face[2];
+  he_face.back()->next() = he_twin_face[1];
+
+  // set vertices
+  he_face[0]->vertex() = he_twin_face[2]->vertex();
+  he_twin_face[0]->vertex() = he_face[2]->vertex();
+
+  // grab pointers to faces to assign to halfedges
+  FaceIter he_face_iter = he_twin_face[1]->face();
+  FaceIter he_twin_face_iter = he_face[1]->face();
+  
+
+  do {
+    he->face() = he_face_iter;
+    cout << "assigning face to he" << endl;
+    he = he->next();
+  } while (he != e0->halfedge());
+
+  do {
+    he_twin->face() = he_twin_face_iter;
+    cout << "assigning twin face to he" << endl;
+    he_twin = he_twin->next();
+  } while (he_twin != e0->halfedge()->twin());
 
   //showError("flipEdge() not implemented.");
-
-  cout << "done flipping" << endl;
-  return h->edge();
+  return he->edge();
 }
 
 void HalfedgeMesh::subdivideQuad(bool useCatmullClark) {
