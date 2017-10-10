@@ -334,30 +334,99 @@ FaceIter HalfedgeMesh::bevelFace(FaceIter f) {
   // positions.  These positions will be updated in
   // HalfedgeMesh::bevelFaceComputeNewPositions (which you also have to
   // implement!)
-  HalfedgeIter h = f->halfedge();
+  HalfedgeIter he = f->halfedge();
+  vector<HalfedgeIter> face_vec;
+  vector<HalfedgeIter> new_face_vec;
 
-  do {
-    VertexCIter v = h->vertex();
+  int degree = f->degree();
+
+  for (int ii=0; ii<degree; ii++) {
+    // fill in face_vec of original face
+    face_vec.push_back(he);
+    // create new halfedges, twins
+    HalfedgeIter new_he = newHalfedge();
+    HalfedgeIter new_he_twin = newHalfedge();
+    // assign twin to halfedge
+    new_he->twin() = new_he_twin;
+    new_he_twin->twin() = new_he;
+    new_face_vec.push_back(new_he);
+    cout << "adding halfedge to new face" << endl;
+
+    if (new_face_vec.size() > 1) {
+      //connect halfedges
+      cout << "connecting halfedges"  << endl;
+      new_face_vec[ii-1]->next() = new_face_vec[ii];
+    } 
+
+    he = he->next();
+  }
+  // connect last he to first
+  new_face_vec.back()->next() = new_face_vec.front();
+  cout << "created new halfedges on new face" << endl;
+
+  int connections = 0;
+  // iterate through twins, connect twins to original halfedges
+  for (int ii=0; ii<new_face_vec.size(); ii++) {
+    // create new halfedge, twin
+    HalfedgeIter new_he = newHalfedge();
+    HalfedgeIter new_he_twin = newHalfedge();
+    // assign new twin
+    new_he->twin() = new_he_twin;
+    new_he_twin->twin() = new_he;
+    // connect face-face he, twin
+    new_face_vec[ii]->twin()->next() = new_he;
+    connections++;
+    new_he->next() = face_vec[ii];
+    connections++;
     
-    // Allocate new elements for two pairs of half-edges. One to connect to the 
-    // original vertices, and one to connect to next 
-    HalfedgeIter he = newHalfedge();
-    VertexIter vi = newVertex();
-    EdgeIter ei = newEdge();
-    FaceIter fi = newFace();
+    if (ii > 0) {
+      face_vec[ii-1]->next() = new_he_twin;
+      connections++;
+      new_he_twin->next() = new_face_vec[ii-1]->twin();
+      connections++;
+    }
+  }
+  // connect last he, he twin
+  face_vec.back()->next() = face_vec[0]->twin()->next()->twin();
+  connections++;
+  face_vec[0]->twin()->next()->twin()->next() = face_vec.back()->twin();
+  connections++;
+  cout << connections << endl;
+  
+  // all edges connected now. add vertices, edges, faces
+  FaceIter new_face = newFace();
+  for (int ii=0; ii<new_face_vec.size(); i++) {
+    VertexIter new_vertex = newVertex();
+    EdgeIter new_edge = newEdge();
+    EdgeIter new_edge_bevel = newEdge();
 
-    HalfedgeIter twin = newHalfedge();
+    // assign vertex, face, edges for smaller face
+    new_face_vec[ii]->face() = new_face;
+    new_face_vec[ii]->vertex() =  new_vertex;
+    new_face_vec[ii]->edge() = new_edge;
+    new_face_vec[ii]->twin()->edge() = new_edge;
 
-    
-    //he->setNeighbors(h, twin, vi, ei, fi);
+    // assign edges for bevel halfedges
+    new_face_vec[ii]->twin()->next()->edge() = new_edge_bevel;
+    new_face_vec[ii]->twin()->next()->twin()->edge() = new_edge_bevel;
+    new_face_vec[ii]->vertex() = new_vertex;
+
+    // loop through bevel and assign vertices
+    HalfedgeIter bevel_iter = new_face_vec[ii]->twin();
+    // create bevel face
+    FaceIter bevel_face = newFace();
+    do {
+      bevel_iter
+      bevel_iter = bevel_iter->next()
+    } while ( bevel_iter != new_face_vec[ii]->twin();)
 
 
-    
-    cout << v->position << endl;
-    h = h->next();
-  } while (h != f->halfedge());
+  }
 
-  showError("bevelFace() not implemented.");
+
+  
+
+  //showError("bevelFace() not implemented.");
   return facesBegin();
 }
 
