@@ -508,7 +508,7 @@ void Mesh::bevel_selected_element() {
   FaceIter _newf;
   if (f != nullptr) {
     // Store the original vertex positions for the beveled face;
-    // we will adjust the positions relative to these positions.
+    // we will adju st the positions relative to these positions.
     beveledFacePos.clear();
     HalfedgeIter tmp = f->halfedge();
     do {
@@ -516,10 +516,13 @@ void Mesh::bevel_selected_element() {
       tmp = tmp->next();
     } while (tmp != f->halfedge());
 
+    cout << "call bevelface" << endl;
     _newf = mesh.bevelFace(f->halfedge()->face());
+    cout << "done bevelface"<< endl;
     scene->selected.element = elementAddress(_newf);
     scene->hovered.clear();
     scene->elementTransform->target.clear();
+    cout <<"done bevel selected" << endl;
   } else if (e != nullptr) {
     VertexIter v0 = e->halfedge()->vertex();
     VertexIter v1 = e->halfedge()->twin()->vertex();

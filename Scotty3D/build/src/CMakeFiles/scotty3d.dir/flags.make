@@ -3,13 +3,13 @@
 
 # compile C with /usr/bin/cc
 # compile CXX with /usr/bin/c++
-C_FLAGS =  
+C_FLAGS = -g  
 
 C_DEFINES = 
 
 C_INCLUDES = -I/home/lwan/ws/graphics/Scotty3D/CMU462/include -I/usr/include/freetype2 -I/usr/include/x86_64-linux-gnu/freetype2 
 
-CXX_FLAGS =  -std=gnu++11 -m64 -O3 -fopenmp  
+CXX_FLAGS =  -std=gnu++11 -m64 -O3 -fopenmp -g  
 
 CXX_DEFINES = 
 

@@ -458,10 +458,14 @@ class Face : public HalfedgeElement {
     Size d = 0;  // degree
 
     // walk around the face
+    cout << "degree" << endl;
     HalfedgeIter h = _halfedge;
+    cout << elementAddress(h)<< endl;
     do {
       d++;  // increment the degree
+
       h = h->next();
+      cout << d << endl;
     } while (h != _halfedge);  // done walking around the face
 
     return d;
