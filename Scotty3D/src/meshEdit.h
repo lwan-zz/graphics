@@ -17,9 +17,16 @@ class MeshResampler {
   void resample(HalfedgeMesh& mesh);
 };
 
-void collectElements(vector<HalfedgeIter>& he_vec, vector<VertexIter>& he_vertex, 
-                     vector<EdgeIter>& he_edge, vector<HalfedgeIter>& he_twin, 
-                     vector<FaceIter>& he_face);
+struct all_elements {
+  vector<HalfedgeIter> he;
+  vector<VertexIter> vertex;
+  vector<EdgeIter> edge;
+  vector<HalfedgeIter> twin;
+  vector<FaceIter> face;
+  vector<HalfedgeIter> next;    
+}; // struct everything_he
+
+void collectElements(all_elements &ae, HalfedgeIter &he);
 
 }  // namespace CMU462
 

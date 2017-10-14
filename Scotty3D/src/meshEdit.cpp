@@ -5,6 +5,22 @@
 #include "error_dialog.h"
 
 namespace CMU462 {
+void collectElements(all_elements &ae, HalfedgeIter &he) {
+  // Take references to empty vector objects and add all elements in a closed-
+  // loop walk around the face, given a pointer to he on face.
+  HalfedgeIter he_start = he;
+
+  do {
+    ae.he.push_back(he);
+    ae.face.push_back(he->face());
+    ae.vertex.push_back(he->vertex());
+    ae.edge.push_back(he->edge());
+    ae.twin.push_back(he->twin());
+    ae.next.push_back(he->next());
+    he = he->next();
+  } while (he != he_start);  
+
+}
 
 VertexIter HalfedgeMesh::splitEdge(EdgeIter e0) {
   // TODO: (meshEdit)
@@ -46,115 +62,83 @@ FaceIter HalfedgeMesh::eraseEdge(EdgeIter e) {
   // TODO: (meshEdit)
   // This method should erase the given edge and return an iterator to the
   // merged face.
+  if (e->halfedge()->isBoundary()) {
+    showError("Cannot erase boundary");
+    return e->halfedge()->face();
+  }
+  all_elements ae1;
+  all_elements ae2;
+  HalfedgeIter he = e->halfedge();
 
-  showError("eraseVertex() not implemented.");
-  return FaceIter();
+  collectElements(ae1, he);
+  collectElements(ae2, he->twin());
+
+  cout << ae1.he.size() << endl;
+  cout << ae2.he.size() << endl;
+
+  FaceIter newface = newFace();
+
+  ae1.he[1]->setNeighbors(ae1.he[2], ae1.twin[1], ae1.vertex[1], ae1.edge[1], newface);
+  ae1.he[2]->setNeighbors(ae2.he[1], ae1.twin[2], ae1.vertex[2], ae1.edge[2], newface);
+  ae2.he[1]->setNeighbors(ae2.he[2], ae2.twin[1], ae2.vertex[1], ae2.edge[1], newface);
+  ae2.he[2]->setNeighbors(ae1.he[1], ae2.twin[2], ae2.vertex[2], ae2.edge[2], newface);
+
+  cout << "done deleting edge" << endl;
+  return newface;
 }
 
-void collectElements(vector<HalfedgeIter>& he_vec, vector<VertexIter>& he_vertex, 
-                     vector<EdgeIter>& he_edge, vector<HalfedgeIter>& he_twin, 
-                     vector<FaceIter>& he_face, HalfedgeIter he) {
-  // Take references to empty vector objects and add all elements in a closed-
-  // loop walk around the face, given a pointer to he on face.
-  HalfedgeIter he_start = he;
-  
-
-  do {
-    he_vec.push_back(he);
-    he_face.push_back(he->face());
-    he_vertex.push_back(he->vertex());
-    he_edge.push_back(he->edge());
-    he_twin.push_back(he->twin());
-
-    cout << "collecting he elements" << endl;
-    he = he->next();
-  } while (he != he_start);  
-
-}
 EdgeIter HalfedgeMesh::flipEdge(EdgeIter e0) {
   // This method should flip the given edge and return an iterator to the
   // flipped edge.
-
-  // walk along halfedge, halfedge twin and accumulate all halfedges on faces
-  // TODO: early exit if boundary
-  vector<HalfedgeIter> he1_vec;
-  vector<VertexIter> he1_vertex;
-  vector<EdgeIter> he1_edge;
-  vector<HalfedgeIter> he1_twin;
-  vector<FaceIter> he1_face;
-
-  vector<HalfedgeIter> he2_vec;
-  vector<VertexIter> he2_vertex;
-  vector<EdgeIter> he2_edge;
-  vector<HalfedgeIter> he2_twin;
-  vector<FaceIter> he2_face;
+  // Early exit if boundary. not dealing with that
+  if (e0->halfedge()->isBoundary() || e0->halfedge()->face()->isBoundary() ||
+      e0->halfedge()->twin()->face()->isBoundary()) {
+      showError("Cannot flip edge: on boundary");
+      return e0;
+    }
+  
+  all_elements ae1;
+  all_elements ae2;
   
   // Collect all features that will be affected:
   HalfedgeIter he1 = e0->halfedge();
   HalfedgeIter he2 = he1->twin();
 
-  collectElements(he1_vec, he1_vertex, he1_edge, he1_twin, he1_face, he1);
-  collectElements(he2_vec, he2_vertex, he2_edge, he2_twin, he2_face, he2);
+  collectElements(ae1, he1);
+  collectElements(ae2, he2);
 
-  cout << he1_vec.size() << endl;
-  cout << he2_vec.size() << endl;
+  // Set halfedge associations
+  ae1.he[0]->setNeighbors(ae1.he[1], ae2.he[0], ae2.vertex[2], e0, ae1.face[0]);
+  ae1.he[1]->setNeighbors(ae1.he[2], ae1.twin[2], ae1.vertex[2], ae1.edge[2], ae1.face[0]);
+  ae1.he[2]->setNeighbors(ae1.he[0], ae2.twin[1], ae1.vertex[0], ae2.edge[1], ae1.face[0]);
+  ae2.he[0]->setNeighbors(ae2.he[1], ae1.he[0], ae1.vertex[2], e0, ae2.face[0]);
+  ae2.he[1]->setNeighbors(ae2.he[2], ae2.twin[2], ae2.vertex[2], ae2.edge[2], ae2.face[0]);
+  ae2.he[2]->setNeighbors(ae2.he[0], ae1.twin[1], ae2.vertex[0], ae1.edge[1], ae2.face[0]);
+  
+  // Set halfedge twin associations
+  ae1.twin[1]->setNeighbors(ae1.twin[1]->next(), ae2.he[2], ae1.vertex[2], ae1.edge[1], ae1.twin[1]->face());
+  ae1.twin[2]->setNeighbors(ae1.twin[2]->next(), ae1.he[1], ae1.vertex[0], ae1.edge[2], ae1.twin[2]->face());
+  ae2.twin[1]->setNeighbors(ae2.twin[1]->next(), ae1.he[2], ae2.vertex[2], ae2.edge[1], ae2.twin[1]->face());
+  ae2.twin[2]->setNeighbors(ae2.twin[2]->next(), ae2.he[1], ae2.vertex[0], ae2.edge[2], ae2.twin[2]->face());
 
-  // Manually reassigned elements
-  he1_vec[0]->
+  // Set vertices
+  ae1.vertex[2]->halfedge() = ae1.he[1];
+  ae1.vertex[0]->halfedge() = ae1.he[2];
+  ae2.vertex[2]->halfedge() = ae2.he[1];
+  ae2.vertex[0]->halfedge() = ae2.he[2];
 
-  // reassign elements
+  // Set edges
+  e0->halfedge() = ae1.he[0];
+  ae1.edge[1]->halfedge() = ae2.he[2];
+  ae1.edge[2]->halfedge() = ae1.he[1];
+  ae2.edge[1]->halfedge() = ae1.he[2];
+  ae2.edge[2]->halfedge() = ae2.he[1];
+
+  // Set faces
+  ae1.face[0]->halfedge() = ae1.he[0];
+  ae2.face[0]->halfedge() = ae2.he[0];
 
   return e0;
-  /*
-  
-  do {
-    HalfedgeIter he_face_temp = he;
-    he_face.push_back(he_face_temp);
-    cout << "adding halfedge to he face vector" << endl;
-    he = he->next();
-  } while (he != e0->halfedge());
-
-  do {
-    HalfedgeIter he_face_temp = he_twin;
-    he_twin_face.push_back(he_face_temp);
-    cout << "adding halfedge to he twin face vector" << endl;
-    he_twin = he_twin->next();
-  } while (he_twin != e0->halfedge()->twin());
-
-  // reconstruct twin face halfedges first
-  he_face[1]->next() = he_twin_face[0];
-  he_twin_face[0]->next() = he_twin_face[2];
-  he_twin_face.back()->next() = he_face[1];
-
-  // reconstruct selected halfedge face
-  he_twin_face[1]->next() = he_face[0];
-  he_face[0]->next() = he_face[2];
-  he_face.back()->next() = he_twin_face[1];
-
-  // set vertices
-  he_face[0]->vertex() = he_twin_face[2]->vertex();
-  he_twin_face[0]->vertex() = he_face[2]->vertex();
-
-  // grab pointers to faces to assign to halfedges
-  FaceIter he_face_iter = he_twin_face[1]->face();
-  FaceIter he_twin_face_iter = he_face[1]->face();
-  
-
-  do {
-    he->face() = he_face_iter;
-    cout << "assigning face to he" << endl;
-    he = he->next();
-  } while (he != e0->halfedge());
-
-  do {
-    he_twin->face() = he_twin_face_iter;
-    cout << "assigning twin face to he" << endl;
-    he_twin = he_twin->next();
-  } while (he_twin != e0->halfedge()->twin());
-
-  //showError("flipEdge() not implemented.");
-  return he->edge();
-  */
 }
 
 void HalfedgeMesh::subdivideQuad(bool useCatmullClark) {

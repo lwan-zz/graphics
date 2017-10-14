@@ -516,13 +516,13 @@ void Mesh::bevel_selected_element() {
       tmp = tmp->next();
     } while (tmp != f->halfedge());
 
-    cout << "call bevelface" << endl;
+    
     _newf = mesh.bevelFace(f->halfedge()->face());
-    cout << "done bevelface"<< endl;
+    
     scene->selected.element = elementAddress(_newf);
     scene->hovered.clear();
     scene->elementTransform->target.clear();
-    cout <<"done bevel selected" << endl;
+    
   } else if (e != nullptr) {
     VertexIter v0 = e->halfedge()->vertex();
     VertexIter v1 = e->halfedge()->twin()->vertex();
