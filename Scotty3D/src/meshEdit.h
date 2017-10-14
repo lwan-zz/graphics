@@ -17,6 +17,10 @@ class MeshResampler {
   void resample(HalfedgeMesh& mesh);
 };
 
+void collectElements(vector<HalfedgeIter>& he_vec, vector<VertexIter>& he_vertex, 
+                     vector<EdgeIter>& he_edge, vector<HalfedgeIter>& he_twin, 
+                     vector<FaceIter>& he_face);
+
 }  // namespace CMU462
 
 #endif  // CMU462_MESHEDIT_H

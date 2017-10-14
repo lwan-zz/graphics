@@ -51,18 +51,62 @@ FaceIter HalfedgeMesh::eraseEdge(EdgeIter e) {
   return FaceIter();
 }
 
+void collectElements(vector<HalfedgeIter>& he_vec, vector<VertexIter>& he_vertex, 
+                     vector<EdgeIter>& he_edge, vector<HalfedgeIter>& he_twin, 
+                     vector<FaceIter>& he_face, HalfedgeIter he) {
+  // Take references to empty vector objects and add all elements in a closed-
+  // loop walk around the face, given a pointer to he on face.
+  HalfedgeIter he_start = he;
+  
+
+  do {
+    he_vec.push_back(he);
+    he_face.push_back(he->face());
+    he_vertex.push_back(he->vertex());
+    he_edge.push_back(he->edge());
+    he_twin.push_back(he->twin());
+
+    cout << "collecting he elements" << endl;
+    he = he->next();
+  } while (he != he_start);  
+
+}
 EdgeIter HalfedgeMesh::flipEdge(EdgeIter e0) {
   // This method should flip the given edge and return an iterator to the
   // flipped edge.
 
   // walk along halfedge, halfedge twin and accumulate all halfedges on faces
   // TODO: early exit if boundary
-  vector<HalfedgeIter> he_face;
-  vector<HalfedgeIter> he_twin_face;
+  vector<HalfedgeIter> he1_vec;
+  vector<VertexIter> he1_vertex;
+  vector<EdgeIter> he1_edge;
+  vector<HalfedgeIter> he1_twin;
+  vector<FaceIter> he1_face;
 
-  HalfedgeIter he = e0->halfedge();
-  HalfedgeIter he_twin = he->twin();
+  vector<HalfedgeIter> he2_vec;
+  vector<VertexIter> he2_vertex;
+  vector<EdgeIter> he2_edge;
+  vector<HalfedgeIter> he2_twin;
+  vector<FaceIter> he2_face;
+  
+  // Collect all features that will be affected:
+  HalfedgeIter he1 = e0->halfedge();
+  HalfedgeIter he2 = he1->twin();
 
+  collectElements(he1_vec, he1_vertex, he1_edge, he1_twin, he1_face, he1);
+  collectElements(he2_vec, he2_vertex, he2_edge, he2_twin, he2_face, he2);
+
+  cout << he1_vec.size() << endl;
+  cout << he2_vec.size() << endl;
+
+  // Manually reassigned elements
+  he1_vec[0]->
+
+  // reassign elements
+
+  return e0;
+  /*
+  
   do {
     HalfedgeIter he_face_temp = he;
     he_face.push_back(he_face_temp);
@@ -110,6 +154,7 @@ EdgeIter HalfedgeMesh::flipEdge(EdgeIter e0) {
 
   //showError("flipEdge() not implemented.");
   return he->edge();
+  */
 }
 
 void HalfedgeMesh::subdivideQuad(bool useCatmullClark) {
