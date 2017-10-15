@@ -112,7 +112,6 @@ VertexIter HalfedgeMesh::splitEdge(EdgeIter e0) {
   ae4.he[2]->setNeighbors(ae4.he[0], ae1.he[1], ae1.vertex[2], ae1.edge[2], face4);
 
   // Set outside halfedge associations // double check the face assocations. don't make sense
-  //cout << elementAddress(ae2.vertex[0]) << " " << elementAddress(ae1.vertex[1]) << " " << elementAddress(ae4.he[1]->vertex()) << endl;
   ae2.twin[2]->setNeighbors(ae2.twin[2]->next(), ae3.he[1], ae2.vertex[0], ae2.edge[2], ae2.twin[2]->face());
   ae2.twin[1]->setNeighbors(ae2.twin[1]->next(), ae2.he[1], ae2.vertex[2], ae2.edge[1], ae2.twin[1]->face());
   ae1.twin[2]->setNeighbors(ae1.twin[2]->next(), ae1.he[2], ae1.vertex[0], ae1.edge[2], ae1.twin[2]->face());
@@ -155,106 +154,7 @@ VertexIter HalfedgeMesh::collapseEdge(EdgeIter e) {
   // TODO: (meshEdit)
   // This method should collapse the given edge and return an iterator to
   // the new vertex created by the collapse.
-  all_elements ae1;
-  all_elements ae2;
-  
-  // Collect all features
-  HalfedgeIter he1 = e->halfedge();
-  HalfedgeIter he2 = he1->twin();
-
-  collectElements(ae1, he1);
-  collectElements(ae2, he2);
-    // TODO: (meshEdit)
-    // This method should collapse the given edge and return an iterator to
-    // the new vertex created by the collapse.
-    if (e->isBoundary())
-      return e->halfedge()->vertex();
-
-    if (e->halfedge()->face()->isBoundary() || e->halfedge()->twin()->face()->isBoundary())
-      return e->halfedge()->vertex();
-
-    // collect elements
-    HalfedgeIter h0 = e->halfedge();
-    HalfedgeIter h1 = h0->next();
-    HalfedgeIter h2 = h1->next();
-    HalfedgeIter h3 = h0->twin();
-    HalfedgeIter h4 = h3->next();
-    HalfedgeIter h5 = h4->next();
-    HalfedgeIter h6 = h5->twin();
-    HalfedgeIter h7 = h4->twin();
-    HalfedgeIter h8 = h2->twin();
-    HalfedgeIter h9 = h1->twin();
-    HalfedgeIter h10 = h9->next();
-    HalfedgeIter h11 = h10->twin();
-    HalfedgeIter h12 = h11->next();
-    HalfedgeIter h13 = h12->twin();
-    HalfedgeIter h14 = h13->next();
-    HalfedgeIter h15 = h14->twin();
-    HalfedgeIter h16 = h7->next();
-    HalfedgeIter h17 = h16->twin();
-    HalfedgeIter h18 = h17->next();
-    HalfedgeIter h19 = h18->twin();
-    HalfedgeIter h20 = h19->next();
-    HalfedgeIter h21 = h20->twin();
-
-    VertexIter v0 = h5->vertex();
-    VertexIter v1 = h2->vertex();
-    VertexIter v2 = h3->vertex();
-    VertexIter v3 = h0->vertex();
-
-    EdgeIter e1 = h5->edge();
-    EdgeIter e2 = h1->edge();
-    EdgeIter e3 = h2->edge();
-    EdgeIter e4 = h4->edge();
-
-    FaceIter f0 = h0->face();
-    FaceIter f1 = h3->face();
-
-    // reassign elements
-    h6->setNeighbors(h6->next(), h7, v2, e1, h6->face());
-    h7->setNeighbors(h7->next(), h6, v0, e1, h7->face());
-    h8->setNeighbors(h8->next(), h9, v2, e2, h8->face());
-    h9->setNeighbors(h9->next(), h8, v1, e2, h9->face());
-    h10->setNeighbors(h10->next(), h11, v2, h10->edge(), h10->face());
-    h11->setNeighbors(h11->next(), h10, h11->vertex(), h11->edge(), h11->face());
-    h12->setNeighbors(h12->next(), h13, v2, h12->edge(), h12->face());
-    h13->setNeighbors(h13->next(), h12, h13->vertex(), h13->edge(), h13->face());
-    h14->setNeighbors(h14->next(), h15, v2, h14->edge(), h14->face());
-    h15->setNeighbors(h6, h14, h15->vertex(), h15->edge(), h15->face());
-    h16->setNeighbors(h16->next(), h17, v2, h16->edge(), h16->face());
-    h17->setNeighbors(h17->next(), h16, h17->vertex(), h17->edge(), h17->face());
-    h18->setNeighbors(h18->next(), h19, v2, h18->edge(), h18->face());
-    h19->setNeighbors(h19->next(), h18, h19->vertex(), h19->edge(), h19->face());
-    h20->setNeighbors(h20->next(), h21, v2, h20->edge(), h20->face());
-    h21->setNeighbors(h8, h20, h21->vertex(), h21->edge(), h21->face());
-
-    v0->halfedge() = h7;
-    v1->halfedge() = h9;
-    v2->halfedge() = h6;
-    v2->position = 0.5f * (v2->position + v3->position);
-
-    e1->halfedge() = h6;
-    e2->halfedge() = h8;
-
-
-    // delete unused elements
-    deleteHalfedge(h0);
-    deleteHalfedge(h1);
-    deleteHalfedge(h2);
-    deleteHalfedge(h3);
-    deleteHalfedge(h4);
-    deleteHalfedge(h5);
-
-    deleteVertex(v3);
-
-    deleteEdge(e);
-    deleteEdge(e3);
-    deleteEdge(e4);
-
-    deleteFace(f0);
-    deleteFace(f1);
-
-    return v2;
+  return e->halfedge()->vertex();
 }
 
 VertexIter HalfedgeMesh::collapseFace(FaceIter f) {
@@ -732,14 +632,6 @@ FaceIter HalfedgeMesh::bevelFace(FaceIter f) {
     }
   }
 
-  // check all loops
-  //for (int ii=0; ii!=he_connectors.size(); ii++) {
-  //  cout << "checking bevel loop: " << ii << endl;
-  //  loopCheck(he_connectors[ii]);
-  //}
-  //cout << "checking inside loop" << endl;
-  //loopCheck(inside.he[0]);
-
   // Assign edges, vertices, faces to their halfedges
   for (int ii=0; ii!=inside.he.size(); ii++) {
     // Assign for inside loop
@@ -754,8 +646,6 @@ FaceIter HalfedgeMesh::bevelFace(FaceIter f) {
   }
   // Last face
   inside.face[0]->halfedge() = inside.he[0];
-  // double check
-  //cout << elementAddress(inside.face[0]) << " " << elementAddress(inside.he[0]->face()) << endl;
 
   return inside.face[0];
 }
@@ -792,19 +682,8 @@ void HalfedgeMesh::bevelFaceComputeNewPositions(
   Vector3D vec2 = originalVertexPositions[2] - originalVertexPositions[1];
   Vector3D normal_vec = cross(vec2, vec1);
   normal_vec.normalize();
-  //normal_vec *= 100;
 
-  cout << "normal vec--------------------------------------------------------------" << endl;
-  cout << normal_vec[0] << " " << normal_vec[1] << " " << normal_vec[2] << endl;
-
-  /*
-  for (int ii =0; ii < newHalfedges.size(); ii++) {
-    cout << newHalfedges[0]->vertex()->position << " " << newHalfedges[1]->vertex()->position << " " << newHalfedges[2]->vertex()->position << endl;
-    cout << originalVertexPositions[0] << " " << originalVertexPositions[1] << " " << originalVertexPositions[2] << endl;
-    cout << isnan(newHalfedges[0]->vertex()->position[0]) << endl;
-  }
-  */
-
+  // Don't bevel if the vertices are on top of each other. This was an issue for some reason. 
   if (newHalfedges[0]->vertex()->position[0] == 0 &&
       newHalfedges[0]->vertex()->position[1] == 0 &&
       newHalfedges[0]->vertex()->position[2] == 0 &&
@@ -816,31 +695,21 @@ void HalfedgeMesh::bevelFaceComputeNewPositions(
     }
   } 
 
-
   vector<Vector3D> unit_vecs; 
   for (int ii = 0; ii < newHalfedges.size(); ii ++) {
     int before_idx = (ii + newHalfedges.size() - 1) % newHalfedges.size();
     int after_idx = (ii + 1) % newHalfedges.size();
 
-    Vector3D new_vertex;
     Vector3D tan_delta = (newHalfedges[ii]->vertex()->position + newHalfedges[before_idx]->vertex()->position + 
                           newHalfedges[after_idx]->vertex()->position) / 3;
+    
     tan_delta -= newHalfedges[ii]->vertex()->position;
     tan_delta.normalize();
     tan_delta *= tangentialInset;// * 100;
 
     Vector3D norm_delta = normal_vec * normalShift;
-    cout << "computing tangent, normal, final deltas" << endl;
-    cout << normal_vec[0] << " " << normal_vec[1] << " " << normal_vec[2] << endl;
-    cout << normalShift << endl;
-    cout << tan_delta[0] << " " << tan_delta[1] << " " << tan_delta[2] << endl;
-    cout << norm_delta[0] << " " << norm_delta[1] << " " << norm_delta[2] << endl;
-    
-    //new_vertex = originalVertexPositions[ii] + norm_delta + tan_delta;
-    cout << new_vertex[0] << " " << new_vertex[1] << " " << new_vertex[2] << endl;
     newHalfedges[ii]->vertex()->position += (norm_delta + tan_delta);
   }
-
 }
 
 void HalfedgeMesh::bevelVertexComputeNewPositions(
