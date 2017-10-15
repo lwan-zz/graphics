@@ -94,7 +94,7 @@ void Application::init() {
   // NOTE: there's a chicken-and-egg problem here, because load()
   // requires init, and init requires init_camera (which is only called by
   // load()).
-  screenW = screenH = 1000;  // Default value
+  screenW = screenH = 500;  // Default value
   CameraInfo cameraInfo;
   cameraInfo.hFov = 20;
   cameraInfo.vFov = 28;

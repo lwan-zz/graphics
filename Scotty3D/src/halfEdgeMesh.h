@@ -458,7 +458,7 @@ class Face : public HalfedgeElement {
     Size d = 0;  // degree
 
     HalfedgeIter h = _halfedge;
-    
+    //cout << elementAddress(h) << endl;
     do {
       d++;  // increment the degree
       h = h->next();
@@ -599,7 +599,7 @@ class Vertex : public HalfedgeElement {
    */
   virtual void getAxes(vector<Vector3D>& axes) const;
 
-  /**
+  /**e
    * Just returns the vertex position itself (which is the center of
    * mass of the vertex!)
    */
@@ -657,17 +657,27 @@ class Vertex : public HalfedgeElement {
    */
   bool isBoundary() const {
     // iterate over the halfedges incident on this vertex
+    //cout << "check isboudnary: " << endl;
     HalfedgeIter h = _halfedge;
+    int ii = 0;
+    //cout << elementAddress(h) << endl;
     do {
       // check if the current halfedge is on the boundary
       if (h->isBoundary()) {
+        //cout << "true" << endl;
         return true;
       }
-
+      //cout << elementAddress(h) << endl;
       // move to the next halfedge around the vertex
       h = h->twin()->next();
-    } while (h != _halfedge);  // done iterating over halfedges
+      ii++;
 
+      if (ii == 10000) {
+        cout << "PROBLEM CHILD: " << elementAddress(_halfedge) << endl;
+        getchar();
+      }
+      //cout << "false" << endl;
+    } while (h != _halfedge);  // done iterating over halfedges
     return false;
   }
 

@@ -27,6 +27,7 @@ struct all_elements {
 }; // struct everything_he
 
 void collectElements(all_elements &ae, HalfedgeIter &he);
+int loopCheck (HalfedgeIter &he);
 
 }  // namespace CMU462
 

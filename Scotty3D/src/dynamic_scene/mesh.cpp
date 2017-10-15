@@ -475,6 +475,7 @@ void Mesh::split_selected_edge() {
   scene->selected.element = elementAddress(v);
   scene->hovered.clear();
   scene->elementTransform->target.clear();
+  cout << "split_selected_edge" << endl;
 }
 
 void Mesh::erase_selected_element() {
