@@ -510,6 +510,7 @@ void HalfedgeMesh::subdivideQuad(bool useCatmullClark) {
   vector<vector<Index> > subDFaces;
   vector<Vector3D> subDVertices;
   buildSubdivisionFaceList(subDFaces);
+  cout << "done subdiciisnon facelist"  << endl;
   buildSubdivisionVertexList(subDVertices);
 
   // TODO Step IV: Pass the list of vertices and quads to a routine that clears
@@ -532,14 +533,20 @@ void HalfedgeMesh::subdivideQuad(bool useCatmullClark) {
 void HalfedgeMesh::computeLinearSubdivisionPositions() {
   // TODO For each vertex, assign Vertex::newPosition to
   // its original position, Vertex::position.
-
+  for (VertexIter vi = verticesBegin(); vi != verticesEnd(); vi++) {
+    vi->newPosition = vi->position;
+  }
   // TODO For each edge, assign the midpoint of the two original
   // positions to Edge::newPosition.
-
-  // TODO For each face, assign the centroid (i.e., arithmetic mean)
+  for (EdgeIter ei = edgesBegin(); ei != edgesEnd(); ei++) {
+    ei->newPosition = ei->centroid();
+  }
+  // TODO For each face, assign the centroid (i.e., aithmetic mean)
   // of the original vertex positions to Face::newPosition.  Note
   // that in general, NOT all faces will be triangles!
-  showError("computeLinearSubdivisionPositions() not implemented.");
+  for (FaceIter fi = facesBegin(); fi != facesEnd(); fi ++) {
+    fi->newPosition = fi->centroid();
+  }
 }
 
 /**
@@ -574,13 +581,27 @@ void HalfedgeMesh::computeCatmullClarkPositions() {
 void HalfedgeMesh::assignSubdivisionIndices() {
   // TODO Start a counter at zero; if you like, you can use the
   // "Index" type (defined in halfedgeMesh.h)
-
+  Index meshindex = 0;
   // TODO Iterate over vertices, assigning values to Vertex::index
 
   // TODO Iterate over edges, assigning values to Edge::index
 
   // TODO Iterate over faces, assigning values to Face::index
-  showError("assignSubdivisionIndices() not implemented.");
+  for (VertexIter vi = verticesBegin(); vi != verticesEnd(); vi++) {
+    vi->index = meshindex;
+    meshindex ++;
+  }
+
+  for (EdgeIter ei = edgesBegin(); ei != edgesEnd(); ei++) {
+    ei->index = meshindex;
+    meshindex ++;
+  }
+
+  for (FaceIter fi = facesBegin(); fi != facesEnd(); fi ++) {
+    fi->index = meshindex;
+    meshindex ++;
+  }
+
 }
 
 /**
@@ -629,6 +650,27 @@ void HalfedgeMesh::buildSubdivisionFaceList(vector<vector<Index> >& subDFaces) {
   // edges, AND faces of the original mesh.  All of these should get used.  Also
   // remember that you must have FOUR indices per face, since you are making a
   // QUAD mesh!
+  for (FaceIter fi = facesBegin(); fi != facesEnd() ; fi++) {
+    HalfedgeIter he = fi->halfedge();
+
+    all_elements ae;
+    collectElements(ae, he);
+    vector<Index> quad(4);
+
+    for (int ii=0; ii != ae.he.size(); ii++) {
+      quad[0] = ae.he[ii]->vertex()->index;
+      quad[1] = ae.he[ii]->edge()->index;
+      quad[2] = ae.he[ii]->face()->index;
+
+      if (ii == 0) {
+        quad[3] = ae.he.back()->edge()->index;
+      } else {
+        quad[3] = ae.he[ii-1]->edge()->index;
+      }
+
+    subDFaces.push_back(quad);
+    }
+  }
 
   // TODO iterate over faces
   // TODO loop around face
@@ -903,9 +945,45 @@ void HalfedgeMesh::splitPolygons(vector<FaceIter>& fcs) {
 void HalfedgeMesh::splitPolygon(FaceIter f) {
   // TODO: (meshedit) 
   // Triangulate a polygonal face
+  cout << "degree" << endl;
+  cout << f->degree() << endl;
+  if (f->degree() != 4) {
+    showError("Only splitting polygons with 4 sides, buddy. Quadrilaterals! Four sides!");
+    return;
+  } 
+  all_elements polyface;
 
+  //TODO: FIGURE OUT WHY SCOTTY IS CALLING SPLIT POLYGON WHEN DEGREE = 3
+  
+  // Collect all features on face;
+  HalfedgeIter he1 = f->halfedge();
+  collectElements(polyface, he1);
+  
+  // Allocate new elements
+  FaceIter newface = newFace();
+  HalfedgeIter newhe = newHalfedge();
+  HalfedgeIter newhe_twin = newHalfedge();
+  EdgeIter newedge = newEdge();
 
-  showError("splitPolygon() not implemented.");
+  // Update connectivity
+  // Just handle squares for now
+  newhe->setNeighbors(polyface.he[3], newhe_twin, polyface.vertex[1], newedge, polyface.face[0]);
+  newhe_twin->setNeighbors(polyface.he[1], newhe, polyface.vertex[3], newedge, newface);
+
+  polyface.he[0]->setNeighbors(newhe, polyface.twin[0], polyface.vertex[0], polyface.edge[0], polyface.face[0]);
+  polyface.he[1]->setNeighbors(polyface.he[2], polyface.twin[1], polyface.vertex[1], polyface.edge[1], newface);
+  polyface.he[2]->setNeighbors(newhe_twin, polyface.twin[2], polyface.vertex[2], polyface.edge[2], newface);
+  polyface.he[3]->setNeighbors(polyface.he[0], polyface.twin[3], polyface.vertex[3], polyface.edge[3], polyface.face[0]);
+
+  // Set associations for new elements, reassociate old face
+  polyface.face[0]->halfedge() = polyface.he[0];
+  newface->halfedge() = newhe_twin;
+  newedge->halfedge() = newhe;
+
+  for (int ii = 0; ii << polyface.he.size(); ii++) {
+    polyface.edge[ii]->halfedge() = polyface.he[ii];
+    polyface.vertex[ii]->halfedge() = polyface.he[ii];
+  }
 }
 
 EdgeRecord::EdgeRecord(EdgeIter& _edge) : edge(_edge) {
