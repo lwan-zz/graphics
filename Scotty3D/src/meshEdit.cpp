@@ -21,9 +21,10 @@ void collectElements(all_elements &ae, HalfedgeIter &he) {
 
 }
 
-int loopCheck (HalfedgeIter &he) {
+unsigned int loopCheck (HalfedgeIter &he) {
+  // Checks a face of halfedges, and returns degree of (manually counted) face
   HalfedgeIter temp_he = he;
-  int count = 0;
+  unsigned int count = 0;
   cout << "checkloop he @ " << elementAddress(he) << endl;
   do {
     count ++;
@@ -36,11 +37,25 @@ int loopCheck (HalfedgeIter &he) {
   return count;
 }
 
+void setAssociations(HalfedgeIter &he) {
+  // Assuming good connections, walks around face to make sure each element
+  // has a corresponding halfedge
+  HalfedgeIter temp_he = he;
+  do {
+    temp_he->vertex()->halfedge() = temp_he;
+    temp_he->edge()->halfedge() = temp_he;
+    temp_he->face()->halfedge() = temp_he;    
+    temp_he = temp_he->next();
+
+  } while ( temp_he != he);
+}
+
 VertexIter HalfedgeMesh::splitEdge(EdgeIter e0) {
   // TODO: (meshEdit)
   // This method should split the given edge and return an iterator to the
   // newly inserted vertex. The halfedge of this vertex should point along
   // the edge that was split, rather than the new edges.
+  // Triangles only!
   if (e0->halfedge()->isBoundary() || e0->halfedge()->face()->isBoundary() ||
       e0->halfedge()->twin()->face()->isBoundary()) {
       showError("Cannot split edge: on (boundary");
@@ -65,9 +80,10 @@ VertexIter HalfedgeMesh::splitEdge(EdgeIter e0) {
   
   // Add new halfedges to ae3, ae4
   for (int ii=0; ii!=num_he; ii++) {
-    HalfedgeIter new_he = newHalfedge();
-    ae3.he.push_back(new_he);
-    ae4.he.push_back(new_he);
+    HalfedgeIter new_he3 = newHalfedge();
+    HalfedgeIter new_he4 = newHalfedge();
+    ae3.he.push_back(new_he3);
+    ae4.he.push_back(new_he4);
   }
   // Allocate new vertex, edges, faces
   VertexIter v5 = newVertex();
@@ -77,16 +93,10 @@ VertexIter HalfedgeMesh::splitEdge(EdgeIter e0) {
   EdgeIter edge23 = newEdge();
   EdgeIter edge34 = newEdge();
 
-  //cout << elementAddress(ae3.he[0]->next()) << " " << elementAddress(ae3.he[1]->next()) << endl;
-  //getchar();
-
-  // set vertex position
-  v5->position = (ae1.vertex[0]->position + ae1.vertex[1]->position) / 2;
-  cout << v5->position[0] << " " << v5->position[1] << " " << v5->position[2] << endl;
       
   // First set halfedge-element associations
   ae1.he[0]->setNeighbors(ae1.he[1], ae2.he[0], ae1.vertex[0], ae1.edge[0], ae1.face[0]);
-  ae1.he[1]->setNeighbors(ae1.he[2], ae4.he[0], v5, edge14, ae1.face[0]);
+  ae1.he[1]->setNeighbors(ae1.he[2], ae4.he[2], v5, edge14, ae1.face[0]);
   ae1.he[2]->setNeighbors(ae1.he[0], ae1.twin[2], ae1.vertex[2], ae1.edge[2], ae1.face[0]);
 
   ae2.he[0]->setNeighbors(ae2.he[1], ae1.he[0], v5, ae2.edge[0], ae2.face[0]);
@@ -95,24 +105,29 @@ VertexIter HalfedgeMesh::splitEdge(EdgeIter e0) {
 
   ae3.he[0]->setNeighbors(ae3.he[1], ae2.he[2], v5, edge23, face3);
   ae3.he[1]->setNeighbors(ae3.he[2], ae2.twin[2], ae2.vertex[2], ae2.edge[2], face3);
-  ae3.he[2]->setNeighbors(ae3.he[0], ae4.he[1], ae2.vertex[0], edge34, face3);
+  ae3.he[2]->setNeighbors(ae3.he[0], ae4.he[0], ae2.vertex[0], edge34, face3);
 
-  ae4.he[0]->setNeighbors(ae4.he[1], ae1.he[1], ae1.vertex[2], edge14, face4);
-  ae4.he[1]->setNeighbors(ae4.he[2], ae3.he[2], v5, edge34, face4);
-  ae4.he[2]->setNeighbors(ae4.he[0], ae1.twin[1], ae2.vertex[0], ae1.edge[1], face4);
+  ae4.he[0]->setNeighbors(ae4.he[1], ae3.he[2], v5, edge34, face4);
+  ae4.he[1]->setNeighbors(ae4.he[2], ae1.twin[1], ae1.vertex[1], ae1.edge[1], face4);
+  ae4.he[2]->setNeighbors(ae4.he[0], ae1.he[1], ae1.vertex[2], ae1.edge[2], face4);
 
   // Set outside halfedge associations // double check the face assocations. don't make sense
-  ae1.twin[2]->setNeighbors(ae1.twin[2]->next(), ae1.he[2], ae1.vertex[0], ae1.edge[2], ae1.twin[2]->face());
-  ae1.twin[1]->setNeighbors(ae1.twin[1]->next(), ae4.he[2], ae1.vertex[2], ae1.edge[1], ae1.twin[1]->face());
-  //cout << elementAddress(ae1.vertex[2])<< " " << elementAddress(ae1.twin[1]->vertex()) << endl;
+  //cout << elementAddress(ae2.vertex[0]) << " " << elementAddress(ae1.vertex[1]) << " " << elementAddress(ae4.he[1]->vertex()) << endl;
   ae2.twin[2]->setNeighbors(ae2.twin[2]->next(), ae3.he[1], ae2.vertex[0], ae2.edge[2], ae2.twin[2]->face());
-  //cout << elementAddress(ae2.vertex[0])<< " " << elementAddress(ae3.he[2]->vertex()) << endl;
   ae2.twin[1]->setNeighbors(ae2.twin[1]->next(), ae2.he[1], ae2.vertex[2], ae2.edge[1], ae2.twin[1]->face());
+  ae1.twin[2]->setNeighbors(ae1.twin[2]->next(), ae1.he[2], ae1.vertex[0], ae1.edge[2], ae1.twin[2]->face());
+  ae1.twin[1]->setNeighbors(ae1.twin[1]->next(), ae4.he[1], ae1.vertex[2], ae1.edge[1], ae1.twin[1]->face());
 
-  // Set element halfedge assocations
+  // Set element halfedge assocationss
+  // set face assocations
+  ae1.face[0]->halfedge() = ae1.he[0];
+  ae2.face[0]->halfedge() = ae2.he[0];
+  face3->halfedge() = ae3.he[0];
+  face4->halfedge() = ae4.he[0];
+  
   // outside square edges`
   ae1.edge[2]->halfedge() = ae1.he[2];
-  ae1.edge[1]->halfedge() = ae4.he[2];
+  ae1.edge[1]->halfedge() = ae4.he[1];
   ae2.edge[2]->halfedge() = ae3.he[1];
   ae2.edge[1]->halfedge() = ae2.he[1];
 
@@ -120,125 +135,20 @@ VertexIter HalfedgeMesh::splitEdge(EdgeIter e0) {
   ae1.edge[0]->halfedge() = ae1.he[0];
   edge14->halfedge() = ae1.he[1];
   edge23->halfedge() = ae3.he[0];
-  edge34->halfedge() = ae4.he[0];
+  edge34->halfedge() = ae4.he[2];
 
   // set vertex assocations
-  ae1.vertex[0]->halfedge() = ae1.he[0];
   ae1.vertex[2]->halfedge() = ae1.he[2];
+  ae1.vertex[0]->halfedge() = ae1.he[0];
   ae1.vertex[1]->halfedge() = ae3.he[2];
   ae2.vertex[2]->halfedge() = ae2.he[2];
+  v5->halfedge() = ae2.he[0];
 
-  // set face assocations
-  ae1.face[0]->halfedge() = ae1.he[0];
-  ae2.face[0]->halfedge() = ae2.he[0];
-  face3->halfedge() = ae3.he[0];
-  face4->halfedge() = ae4.he[0];
-  
-  // check loops!!
-
-  loopCheck(ae1.he[0]);
-  loopCheck(ae2.he[0]);
-  loopCheck(ae3.he[0]);
-  loopCheck(ae4.he[0]);
-  loopCheck(ae1.he[2]->twin());
-  loopCheck(ae2.he[1]->twin());
-  loopCheck(ae3.he[1]->twin());
-  loopCheck(ae4.he[2]->twin());
-
-  cout << "edge split" << endl;
-  loopCheck(v5->halfedge());
+  // set vertex position
+  v5->position = (ae1.vertex[0]->position + ae1.vertex[1]->position) / 2;
   
   return v5; 
 }
-  /*
-      if (e0->isBoundary())
-      return e0->halfedge()->vertex();
-
-    if (e0->halfedge()->face()->isBoundary() || e0->halfedge()->twin()->face()->isBoundary())
-      return e0->halfedge()->vertex();
-
-    // collect elements
-    HalfedgeIter h0 = e0->halfedge();
-    HalfedgeIter h1 = h0->next();
-    HalfedgeIter h2 = h1->next();
-    HalfedgeIter h3 = h0->twin();
-    HalfedgeIter h4 = h3->next();
-    HalfedgeIter h5 = h4->next();
-    HalfedgeIter h6 = h5->twin();
-    HalfedgeIter h7 = h4->twin();
-    HalfedgeIter h8 = h2->twin();
-    HalfedgeIter h9 = h1->twin();
-
-    VertexIter v0 = h2->vertex();
-    VertexIter v1 = h0->vertex();
-    VertexIter v2 = h3->vertex();
-    VertexIter v3 = h5->vertex();
-
-    EdgeIter e1 = h2->edge();
-    EdgeIter e2 = h4->edge();
-    EdgeIter e3 = h5->edge();
-    EdgeIter e4 = h1->edge();
-
-    FaceIter f0 = h0->face();
-    FaceIter f1 = h3->face();
-
-    //allocate new elements
-    HalfedgeIter h10 = newHalfedge();
-    HalfedgeIter h11 = newHalfedge();
-    HalfedgeIter h12 = newHalfedge();
-    HalfedgeIter h13 = newHalfedge();
-    HalfedgeIter h14 = newHalfedge();
-    HalfedgeIter h15 = newHalfedge();
-
-    VertexIter v4 = newVertex();
-
-    EdgeIter e5 = newEdge();
-    EdgeIter e6 = newEdge();
-    EdgeIter e7 = newEdge();
-
-    FaceIter f2 = newFace();
-    FaceIter f3 = newFace();
-
-    // reassign elements
-    h0->setNeighbors(h1, h3, v1, e0, f0);
-    h1->setNeighbors(h2, h15, v4, e7, f0);
-    h2->setNeighbors(h0, h8, v0, e1, f0);
-    h3->setNeighbors(h4, h0, v4, e0, f1);
-    h4->setNeighbors(h5, h7, v1, e2, f1);
-    h5->setNeighbors(h3, h10, v3, e5, f1);
-    h6->setNeighbors(h6->next(), h11, v2, e3, f2);
-    h7->setNeighbors(h7->next(), h4, v3, e2, f1);
-    h8->setNeighbors(h8->next(), h2, v1, e1, f0);
-    h9->setNeighbors(h9->next(), h14, v0, e4, f3);
-    h10->setNeighbors(h11, h5, v4, e5, f2);
-    h11->setNeighbors(h12, h6, v3, e3, f2);
-    h12->setNeighbors(h10, h13, v2, e6, f2);
-    h13->setNeighbors(h14, h12, v4, e6, f3);
-    h14->setNeighbors(h15, h9, v2, e4, f3);
-    h15->setNeighbors(h13, h1, v0, e7, f3);
-
-    v0->halfedge() = h2;
-    v1->halfedge() = h0;
-    v2->halfedge() = h12;
-    v3->halfedge() = h5;
-    v4->halfedge() = h3;
-
-    e0->halfedge() = h0;
-    e1->halfedge() = h2;
-    e2->halfedge() = h4;
-    e3->halfedge() = h11;
-    e4->halfedge() = h14;
-    e5->halfedge() = h5;
-    e6->halfedge() = h12;
-    e7->halfedge() = h1;
-
-    f0->halfedge() = h0;
-    f1->halfedge() = h3;
-    f2->halfedge() = h10;
-    f3->halfedge() = h13;
-    
-    v4->position = 0.5f * (v1->position + v2->position);
-r=    return v4;*/
 
 
 VertexIter HalfedgeMesh::collapseEdge(EdgeIter e) {
@@ -510,7 +420,6 @@ void HalfedgeMesh::subdivideQuad(bool useCatmullClark) {
   vector<vector<Index> > subDFaces;
   vector<Vector3D> subDVertices;
   buildSubdivisionFaceList(subDFaces);
-  cout << "done subdiciisnon facelist"  << endl;
   buildSubdivisionVertexList(subDVertices);
 
   // TODO Step IV: Pass the list of vertices and quads to a routine that clears
@@ -565,11 +474,36 @@ void HalfedgeMesh::computeCatmullClarkPositions() {
   // rules. (These rules are outlined in the Developer Manual.)
 
   // TODO face
-
   // TODO edges
 
   // TODO vertices
-  showError("computeCatmullClarkPositions() not implemented.");
+  for (FaceIter fi = facesBegin(); fi != facesEnd(); fi ++) {
+    fi->newPosition = fi->centroid();
+  }
+
+  for (EdgeIter ei = edgesBegin(); ei != edgesEnd(); ei++) {
+    ei->newPosition = ( ei->halfedge()->face()->newPosition + ei->halfedge()->twin()->face()->newPosition ) /2;
+  }
+
+  for (VertexIter vi = verticesBegin(); vi != verticesEnd(); vi++) {
+    HalfedgeIter he = vi->halfedge();
+    Vector3D Q; // initialized to (0,0,0)
+    Vector3D R;
+    Vector3D S = vi->position;
+    unsigned int vert_degree = 0;
+    do {
+      Q += he->face()->newPosition;
+      R += he->edge()->centroid();
+
+      he = he->twin()->next();
+      vert_degree++;
+    } while(he != vi->halfedge());
+    
+    Q /= vert_degree;
+    R /= vert_degree;
+
+    vi->newPosition = (Q + 2*R + (vert_degree - 3) * S) / vert_degree;
+  }
 }
 
 /**
@@ -622,7 +556,18 @@ void HalfedgeMesh::buildSubdivisionVertexList(vector<Vector3D>& subDVertices) {
 
   // TODO Iterate over faces, assigning Face::newPosition to the appropriate
   // location in the new vertex list.
-  showError("buildSubdivisionVertexList() not implemented.");
+  subDVertices.resize(nVertices() + nEdges() + nFaces());
+  for (VertexIter vi = verticesBegin(); vi != verticesEnd(); vi++) {
+    subDVertices[vi->index] = vi->newPosition;
+  }
+
+  for (EdgeIter ei = edgesBegin(); ei != edgesEnd(); ei++) {
+    subDVertices[ei->index] = ei->newPosition;
+  }
+
+  for (FaceIter fi = facesBegin(); fi != facesEnd(); fi++) {
+    subDVertices[fi->index] = fi->newPosition;
+  }
 }
 
 /**
@@ -676,7 +621,6 @@ void HalfedgeMesh::buildSubdivisionFaceList(vector<vector<Index> >& subDFaces) {
   // TODO loop around face
   // TODO build lists of four indices for each sub-quad
   // TODO append each list of four indices to face list
-  showError("buildSubdivisionFaceList() not implemented.");
 }
 
 FaceIter HalfedgeMesh::bevelVertex(VertexIter v) {
@@ -948,7 +892,7 @@ void HalfedgeMesh::splitPolygon(FaceIter f) {
   cout << "degree" << endl;
   cout << f->degree() << endl;
   if (f->degree() != 4) {
-    showError("Only splitting polygons with 4 sides, buddy. Quadrilaterals! Four sides!");
+    //showError("Only splitting polygons with 4 sides, buddy. Quadrilaterals! Four sides!");
     return;
   } 
   all_elements polyface;

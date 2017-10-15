@@ -671,10 +671,11 @@ class Vertex : public HalfedgeElement {
       // move to the next halfedge around the vertex
       h = h->twin()->next();
       ii++;
-
+      // If a vertex as 10000+ halfedges on it, then we got an issue
       if (ii == 10000) {
         cout << "PROBLEM CHILD: " << elementAddress(_halfedge) << endl;
         getchar();
+        exit(EXIT_FAILURE);
       }
       //cout << "false" << endl;
     } while (h != _halfedge);  // done iterating over halfedges
