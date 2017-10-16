@@ -561,6 +561,8 @@ Vector3D Face::centroid() const {
   // walk around the face
   HalfedgeIter h = _halfedge;
   do {
+    //cout << "facecentroid" << endl;
+    //cout << elementAddress(h)<< endl;
     c += h->vertex()->position;
     d += 1.;
 

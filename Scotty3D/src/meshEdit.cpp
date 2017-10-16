@@ -154,7 +154,139 @@ VertexIter HalfedgeMesh::collapseEdge(EdgeIter e) {
   // TODO: (meshEdit)
   // This method should collapse the given edge and return an iterator to
   // the new vertex created by the collapse.
-  return e->halfedge()->vertex();
+  if (e->halfedge()->isBoundary() || e->halfedge()->face()->isBoundary() ||
+      e->halfedge()->twin()->face()->isBoundary()) {
+      showError("Cannot collapse edge: on (boundary");
+      return e->halfedge()->vertex();
+  }
+  
+  HalfedgeIter he = e->halfedge();
+  vector<HalfedgeIter> he1_vec;
+  vector<HalfedgeIter> he2_vec;
+
+  // Use v1 as the common vertex, update vertex position with edge centroid
+  VertexIter v1 = he->next()->vertex();
+  //v1->position = he->edge()->centroid();
+  Vector3D test = (he->vertex()->position + he->twin()->vertex()->position) / 2;
+  v1->position = test;
+  //cout << v1->position << " " << test << endl;
+
+  // Collect halfedges along first vertex
+  HalfedgeIter he_v1 = he->next();
+  do {
+    he1_vec.push_back(he_v1);
+    he_v1 = he_v1->twin()->next();
+    cout << "first vertex" << endl;
+  } while (he_v1 != e->halfedge()->twin());
+
+  // Collect halfedges along second vertex
+  HalfedgeIter he_v2 = he->twin()->next();
+  do {
+    he2_vec.push_back(he_v2);
+    he_v2 = he_v2->twin()->next();
+    cout << "second vertex" << endl;
+  } while (he_v2 != e->halfedge());
+
+  // Update vertices of he around vertex 2
+  cout << "numel in vec: " << he2_vec.size() << endl;  // should be 3
+  for (int ii = 0; ii < he2_vec.size(); ++ii) {
+    he2_vec[ii]->setNeighbors(he2_vec[ii]->next(), he2_vec[ii]->twin(), v1, 
+                              he2_vec[ii]->edge(), he2_vec[ii]->twin()->face());
+  }
+  // Vetices definitely are set.
+
+
+  // Face / element grab for faces on each side of the edge
+  all_elements ae1;
+  all_elements ae2;
+  collectElements(ae1, he);
+  collectElements(ae2, he);
+
+  // UGLY, but try test each side of the edge for degree == 3
+  // Inconsistent setneighbors, sorry.
+  if (ae1.face[0]->degree() == 3) {
+    cout << "degree 3 face" << endl;
+    he2_vec.back()->setNeighbors(he2_vec.back()->next(), he1_vec[0]->twin(), v1, 
+                              he1_vec[0]->edge(), he2_vec.back()->face());
+    he1_vec[0]->twin()->setNeighbors(he1_vec[0]->twin()->next(), he2_vec.back(), he1_vec[0]->twin()->vertex(), 
+                                     he1_vec[0]->twin()->edge(), he1_vec[0]->twin()->face());
+  
+    // Assign elements
+    he2_vec.back()->edge()->halfedge() = he2_vec.back();
+    he2_vec.back()->face()->halfedge() = he2_vec.back();
+    he1_vec[0]->twin()->vertex()->halfedge() = he1_vec[0]->twin(); //!
+    he1_vec[0]->twin()->face()->halfedge() = he1_vec[0]->twin();
+
+    deleteHalfedge(he1_vec[0]);
+    deleteHalfedge(he2_vec.back()->twin());
+    deleteEdge(he1_vec[0]->edge());
+    deleteFace(he->face());
+
+
+  } else if (ae1.face[0]->degree() > 3) {
+    cout << "degree 4+ face" << endl;
+    he2_vec.back()->setNeighbors(he1_vec[0], he2_vec.back()->twin(), he2_vec.back()->vertex(), he2_vec.back()->edge(), 
+                              he2_vec.back()->face());
+  
+  } else {
+    showError("what how did this happen");
+  }
+
+  if (ae2.face[0]->degree() == 3) {
+    cout << "degree 3 face" << endl;
+    he1_vec.back()->setNeighbors(he1_vec.back()->next(), he2_vec[0]->twin(), v1, 
+                              he1_vec.back()->edge(), he1_vec.back()->face());
+    he2_vec[0]->twin()->setNeighbors(he2_vec[0]->twin()->next(), he1_vec.back(), he2_vec[0]->twin()->vertex(), 
+                                     he1_vec.back()->twin()->edge(),he2_vec[0]->twin()->face());
+
+    // Assign elements
+    he1_vec.back()->edge()->halfedge() = he1_vec.back();
+    he1_vec.back()->face()->halfedge() = he1_vec.back();
+    he2_vec[0]->twin()->vertex()->halfedge() = he2_vec[0]->twin();
+    he2_vec[0]->twin()->face()->halfedge() = he2_vec[0]->twin();
+
+    deleteHalfedge(he2_vec[0]);
+    deleteHalfedge(he1_vec.back()->twin());
+    deleteEdge(he2_vec[0]->edge());
+    deleteFace(he->twin()->face());
+  
+  } else if (ae1.face[0]->degree() > 3) {
+    cout << "degree 4+ face" << endl;
+    he1_vec.back()->setNeighbors(he2_vec[0], he1_vec.back()->twin(), he1_vec.back()->vertex(), he1_vec.back()->edge(), 
+                              he1_vec.back()->face());
+  
+  } else {
+    showError("what how did this happen");
+  }
+
+  // Set edge, v1 halfedge associations
+  v1->halfedge() = he1_vec[1];
+  
+  deleteVertex(he->vertex());
+  deleteHalfedge(he->twin());
+  deleteEdge(he->edge());
+  deleteHalfedge(he);
+  
+  // check loops
+  /*for (int ii=1; ii!=he1_vec.size(); ++ii) {
+    setAssociations(he1_vec[ii]);
+    setAssociations(he2_vec[ii]);  
+  }
+  */
+  for (int ii=1; ii!=he1_vec.size(); ++ii) {
+    loopCheck(he1_vec[ii]);
+    loopCheck(he2_vec[ii]);  
+  }
+  loopCheck(he2_vec.back());  
+  cout << elementAddress(he2_vec.back()) << endl;
+  cout << elementAddress(he2_vec.back()->twin()) << endl;
+  cout << elementAddress(he2_vec.back()->twin()->next()) << endl;
+  // Set edge, v1 halfedge associations
+  v1->halfedge() = he2_vec.back();
+
+  cout << "done collapse" << endl;
+  return v1;
+
 }
 
 VertexIter HalfedgeMesh::collapseFace(FaceIter f) {
@@ -170,7 +302,7 @@ FaceIter HalfedgeMesh::eraseVertex(VertexIter v) {
   // This method should replace the given vertex and all its neighboring
   // edges and faces with a single face, returning the new face.
 
-
+  showError("eraseVertex() not implemented.");
   return FaceIter();
 }
 
@@ -185,22 +317,37 @@ FaceIter HalfedgeMesh::eraseEdge(EdgeIter e) {
   all_elements ae1;
   all_elements ae2;
   HalfedgeIter he = e->halfedge();
+  FaceIter f1 = e->halfedge()->face();
+  HalfedgeIter he_start = e->halfedge()->next();
 
   collectElements(ae1, he);
   collectElements(ae2, he->twin());
 
-  cout << ae1.he.size() << endl;
-  cout << ae2.he.size() << endl;
+  vector<HalfedgeIter> loop_hes;
 
-  FaceIter newface = newFace();
+  // Connect mesh
+  ae1.he.back()->setNeighbors(ae2.he[1], ae1.twin.back(), ae1.vertex.back(), 
+                              ae1.edge.back(), f1);
+  ae2.he.back()->setNeighbors(ae1.he[1], ae2.twin.back(), ae2.vertex.back(),
+                              ae2.edge.back(), f1);
+  
+  HalfedgeIter he_loop = he_start;
+  do {
+    he_loop->setNeighbors(he_loop->next(), he_loop->twin(), he_loop->vertex(),
+                          he_loop->edge(), f1);
+    he_loop = he_loop->next();
+  } while (he_loop != he_start);
+  
+  // Associate elements
+  setAssociations(he_start);  
 
-  ae1.he[1]->setNeighbors(ae1.he[2], ae1.twin[1], ae1.vertex[1], ae1.edge[1], newface);
-  ae1.he[2]->setNeighbors(ae2.he[1], ae1.twin[2], ae1.vertex[2], ae1.edge[2], newface);
-  ae2.he[1]->setNeighbors(ae2.he[2], ae2.twin[1], ae2.vertex[1], ae2.edge[1], newface);
-  ae2.he[2]->setNeighbors(ae1.he[1], ae2.twin[2], ae2.vertex[2], ae2.edge[2], newface);
+  // Delete leftovers
+  deleteEdge(e);
+  deleteFace(he->twin()->face());
+  deleteHalfedge(he->twin());
+  deleteHalfedge(he);
 
-  cout << "done deleting edge" << endl;
-  return newface;
+  return f1;
 }
 
 EdgeIter HalfedgeMesh::flipEdge(EdgeIter e0) {
@@ -758,8 +905,6 @@ void HalfedgeMesh::splitPolygons(vector<FaceIter>& fcs) {
 void HalfedgeMesh::splitPolygon(FaceIter f) {
   // TODO: (meshedit) 
   // Triangulate a polygonal face
-  cout << "degree" << endl;
-  cout << f->degree() << endl;
   if (f->degree() != 4) {
     //showError("Only splitting polygons with 4 sides, buddy. Quadrilaterals! Four sides!");
     return;
@@ -830,6 +975,115 @@ void MeshResampler::upsample(HalfedgeMesh& mesh)
   //    loop will never end!)
   // -> Now flip any new edge that connects an old and new vertex.
   // -> Finally, copy the new vertex positions into final Vertex::position.
+  int n  = mesh.nEdges();
+  EdgeIter e = mesh.edgesBegin();
+
+  // Figure out what's old first, calculate vertex positions
+  // Calculate new edge positions
+  cout << "positions from edge" << endl;
+  int num_edge = 0;
+  for (EdgeIter ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ei++) {
+    ei->isNew = false;
+
+    all_elements ae1;
+    all_elements ae2;
+    collectElements(ae1, ei->halfedge());
+    collectElements(ae2, ei->halfedge()->twin());
+    ei->newPosition = 3.0/8.0 * (ae1.vertex[0]->position + ae1.vertex[2]->position) +
+                      1.0/8.0 * (ae1.vertex[1]->position + ae2.vertex[2]->position);
+    cout << ei->newPosition << endl;
+    ++num_edge;
+  }
+
+  cout << "postiions from vertex" << endl;
+  int num_new = 0;
+  int num_vert = 0;
+  for (VertexIter vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); vi++) {
+    vi->isNew = false;
+    
+    Size degree = vi->degree();
+    float u;
+    
+    if (degree == 3) {
+      u = 3.0/16.0;
+    } else {
+      u = 3.0 / (8.0 * degree);
+    }
+
+    HalfedgeIter h = vi->halfedge();
+    vector<HalfedgeIter> spokes;
+    do {
+      spokes.push_back(h);
+      h = h->twin()->next();
+    } while (h != vi->halfedge());
+    
+    Vector3D sum;
+    for (int ii = 0; ii != spokes.size(); ++ii) {
+      sum += spokes[ii]->next()->vertex()->position;
+    } 
+
+    vi->newPosition = (1.0 - degree * u) * vi->position + u * sum;
+    num_vert ++;
+    cout << vi->newPosition << endl;
+  }
+  cout << num_vert + num_edge << " : Vertices computed" << endl;
+  cout << num_vert << " : from vert" << endl;
+  cout << num_edge << " : from edge" << endl;
+
+  // Split, assign vertex positions from edge new position
+  cout << "split edges" << endl;
+  for (EdgeIter ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ei++) {
+    if (ei->isNew == false) {
+      VertexIter split_vi;
+      split_vi = mesh.splitEdge(ei);
+      split_vi->isNew = true;
+
+      split_vi->newPosition = ei->newPosition;
+      //cout << ei->newPosition << endl;
+      num_new ++;
+      
+      HalfedgeIter h = split_vi->halfedge();
+      int ii = 0;
+      do {
+        ii ++;
+        h->edge()->isNew = true;
+        h = h->twin()->next();
+      } while (h != split_vi->halfedge());
+    }
+  }
+  cout << "updated vertices: " << num_new << endl;
+
+  //cout << "num edges after split" << endl;
+  //cout << mesh.nEdges() << endl;
+
+  /*cout << "pre flip positions" << endl;
+  for (VertexIter vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); vi++) {
+    cout << vi->newPosition << endl;
+    cout << vi->isNew << endl;
+  }*/
+
+  // Flip edges
+  for (EdgeIter ei = mesh.edgesBegin(); ei != mesh.edgesEnd(); ei++) {
+    if (ei->halfedge()->vertex()->isNew != ei->halfedge()->twin()->vertex()->isNew) { 
+      mesh.flipEdge(ei);
+    }
+  }
+
+  // Finally reassign new vertex positions
+  for (VertexIter vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); vi++) {
+    Vector3D nothin;
+    if (vi->newPosition == nothin) {
+      cout << "unassigned new postiion" << endl;
+      getchar();
+    }
+    vi->position = vi->newPosition;
+  }  
+
+  cout << "final vertex positions" << endl;
+  for (VertexIter vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); vi++) {
+    cout << vi->position << endl;
+  }
+
 
   // Each vertex and edge of the original surface can be associated with a
   // vertex in the new (subdivided) surface.
@@ -860,7 +1114,8 @@ void MeshResampler::upsample(HalfedgeMesh& mesh)
   // Finally, flip any new edge that connects an old and new vertex.
 
   // Copy the updated vertex positions to the subdivided mesh.
-  showError("upsample() not implemented.");
+
+  cout << "upsample done" << endl;
 }
 
 void MeshResampler::downsample(HalfedgeMesh& mesh) {
@@ -879,6 +1134,7 @@ void MeshResampler::downsample(HalfedgeMesh& mesh) {
   //    the collapsed vertex AFTER it's been collapsed. Also remember to assign
   //    a quadric to the collapsed vertex, and to pop the collapsed edge off the
   //    top of the queue.
+
   showError("downsample() not implemented.");
 }
 
@@ -893,6 +1149,7 @@ void MeshResampler::resample(HalfedgeMesh& mesh) {
   //    been destroyed by a collapse (which ones?)
   // -> Now flip each edge if it improves vertex degree
   // -> Finally, apply some tangential smoothing to the vertex positions
+
   showError("resample() not implemented.");
 }
 

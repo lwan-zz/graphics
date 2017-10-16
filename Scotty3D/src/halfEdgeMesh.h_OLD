@@ -457,8 +457,8 @@ class Face : public HalfedgeElement {
   Size degree() const {
     Size d = 0;  // degree
 
-    // walk around the face
     HalfedgeIter h = _halfedge;
+    //cout << elementAddress(h) << endl;
     do {
       d++;  // increment the degree
       h = h->next();
@@ -599,7 +599,7 @@ class Vertex : public HalfedgeElement {
    */
   virtual void getAxes(vector<Vector3D>& axes) const;
 
-  /**
+  /**e
    * Just returns the vertex position itself (which is the center of
    * mass of the vertex!)
    */
@@ -621,16 +621,26 @@ class Vertex : public HalfedgeElement {
     Vector3D pi = position;
 
     // Iterate over neighbors.
+    int ii = 0;
     HalfedgeCIter h = halfedge();
     if (isBoundary()) {
       do {
         Vector3D pj = h->next()->vertex()->position;
         Vector3D pk = h->next()->next()->vertex()->position;
         N += cross(pj - pi, pk - pi);
+        
+        if (ii > 10000) {
+          cout << elementAddress(h) << endl;
+          getchar();
+        }
+
         h = h->next()->twin();
+        //++ii;
       } while (h != halfedge());
     } else {
       do {
+        //cout << "normal" << endl;
+        //cout << elementAddress(h) << endl;
         Vector3D pj = h->next()->vertex()->position;
         Vector3D pk = h->next()->next()->vertex()->position;
         N += cross(pj - pi, pk - pi);
@@ -657,17 +667,38 @@ class Vertex : public HalfedgeElement {
    */
   bool isBoundary() const {
     // iterate over the halfedges incident on this vertex
+    //cout << "check isboudnary: " << endl;
     HalfedgeIter h = _halfedge;
+    int ii = 0;
+    //cout << elementAddress(h) << endl;
     do {
+      HalfedgeIter h_old = h;
       // check if the current halfedge is on the boundary
       if (h->isBoundary()) {
+        cout << "true" << endl;
+        cout << elementAddress(h) << endl;
+        //cout << elementAddress(h_old) << endl;
         return true;
       }
-
+      //cout << elementAddress(h) << endl;
       // move to the next halfedge around the vertex
+      //cout << elementAddress(h) << endl;
+      
       h = h->twin()->next();
+      
+      if (h == h_old) {
+        cout << "broken h: " << elementAddress(h) << endl;
+        getchar();  
+      }
+      //ii ++;
+      // If a vertex as 10000+ halfedges on it, then we got an issue
+      if (ii == 10000) {
+        cout << "PROBLEM CHILD: " << elementAddress(_halfedge) << endl;
+        getchar();
+        exit(EXIT_FAILURE);
+      }
+      //cout << "false" << endl;
     } while (h != _halfedge);  // done iterating over halfedges
-
     return false;
   }
 
