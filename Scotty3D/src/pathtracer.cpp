@@ -489,8 +489,29 @@ Spectrum PathTracer::raytrace_pixel(size_t x, size_t y) {
   // The sample rate is given by the number of camera rays per pixel.
 
   int num_samples = ns_aa;
+  double x_screen = (double) x;
+  double y_screen = (double) y;
 
-  Vector2D p = Vector2D(0.5, 0.5);
+  if (num_samples > 1) {
+    double x_sum = 0;
+    double y_sum = 0;
+    Vector2D vec;
+
+    for (int ii = 0; ii != 8; ii++) {
+      vec = this->gridSampler->get_sample();
+      x_sum += vec.x;
+      y_sum += vec.y;
+    }
+
+    x_screen += x_sum / (double)num_samples;
+    y_screen += y_sum / (double)num_samples;
+  } 
+
+  std::pair<double, double> screen_size = camera->get_screen_size();
+  double x_norm = x_screen / (double)screen_size.first;
+  double y_norm = y_screen / (double)screen_size.second;
+  Vector2D p = Vector2D(x_norm, y_norm); // initialize point to x, y
+
   return trace_ray(camera->generate_ray(p.x, p.y));
 }
 

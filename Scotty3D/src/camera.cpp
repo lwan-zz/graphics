@@ -113,7 +113,20 @@ Ray Camera::generate_ray(double x, double y) const {
   // compute position of the input sensor sample coordinate on the
   // canonical sensor plane one unit away from the pinhole.
 
-  return Ray(Vector3D(0, 0, 0), Vector3D(0, 0, 1));
+  // apply c2w rotation
+  // translate by pos for each point, generate a ray using these points?
+  // add or subtract pos?
+
+  // just being pdantic
+  Vector3D origin = this->c2w * Vector3D(0, 0, 0) + pos; 
+  Vector3D position = this->c2w * Vector3D(x, y, 1) + pos;
+
+  return Ray(origin, position);
+}
+
+std::pair<size_t, size_t>  Camera::get_screen_size(void) {
+    std::pair<size_t, size_t>  screen_size(this->screenW, screenH);
+    return screen_size;
 }
 
 }  // namespace CMU462
