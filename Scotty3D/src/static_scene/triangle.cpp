@@ -18,7 +18,6 @@ BBox Triangle::get_bbox() const {
 }
 
 bool Triangle::intersect(const Ray& r) const {
-  bool intersect = false;
   double F_THRESH = 0.000001;
 
   // get triangle vertices
@@ -31,38 +30,36 @@ bool Triangle::intersect(const Ray& r) const {
   Vector3D e1 = p1 - p0;
   Vector3D e2 = p2 - p0;
 
-  Vector3D h = cross(r.d, e2);
-  double a = dot(e1, h);
-  if (abs(a) < F_THRESH) {return false;}
+  // might need to do better interpolation
+  Vector3D normal = (this->mesh->normals[this->v1] + 
+                     this->mesh->normals[this->v2] + 
+                     this->mesh->normals[this->v3]) / 3;
 
-  double f = 1/a;
-  Vector3D s = r.o - p0;
-  double u  = f * dot(s, h);
+  // check ray, plane parallelism
+  double dot_dir = dot(normal, r.d);
+  if (abs(dot_dir) < F_THRESH) {return false;}
+  double d = dot(normal, p0);
+  double t = (dot(r.o, normal) + d) / dot_dir;
 
-  if (u < 0.0 || u > 1.0) {return false;}
+  // if point behind ray, return false
+  if (t < 0) {return false;}
+  Vector3D intersect = r.o + t * r.d;
 
-  Vector3D q = cross(s, e1);
-  double v = f * dot(r.d, q);
-  if(v < 0.0 || u + v > 1.0) {return false;}
+  // check which side intersection is on
+  Vector3D p1_p0 = p1 - p0;
+  Vector3D intersect_p0 = intersect - p0;
+  if (dot(normal, cross(p1_p0, intersect_p0)) < 0) {return false;}
 
-  double t = f *dot(e2, q);
-  if (t > F_THRESH) {
-   
-    Vector3D intersection  = r.o + r.d * t;
-    return true;
-  }
+  Vector3D p2_p1 = p2 - p1;
+  Vector3D intersect_p1 = intersect - p1;
+  if (dot(normal, cross(p2_p1, intersect_p1)) < 0) {return false;}  
 
-  else {return false;}
+  Vector3D p0_p2 = p0 - p2;
+  Vector3D intersect_p2 = intersect - p2;
+  if (dot(normal, cross(p0_p2, intersect_p2)) < 0) {return false;}  
 
-  //cout << "vec1: " << vec1.x << " " << vec1.y << " " << vec1.z << endl;  
-
-  //cout << ":w: " << p0.x << " " << p0.y << " " << p0.z << endl;
-  //cout << "no isect" << endl;
-  //Vector3D f_debug = p0 + vec1.x * (p1 - p0) + vec1.y * (p2 - p0);
-
-  //cout << "fval: " << f_debug.x << " " << f_debug.y << " " << f_debug.z << endl;
-  //cout << "norm p1-p0: " << (p1-p0).norm() << endl;
-  //cout << "norm p2-p0: " << (p2-p0).norm() << endl;
+  cout << "hit" << endl;
+  return true;
 }
 
 bool Triangle::intersect(const Ray& r, Intersection* isect) const {
@@ -72,9 +69,11 @@ bool Triangle::intersect(const Ray& r, Intersection* isect) const {
   //Vector2D e1_d = Vector2D()
 
   // get triangle points
-  bool intersect = this->intersect(r); 
-
+  bool intersect = this->intersect(r);  
   
+  if (!intersect) {
+    cout << "miss" << endl;
+  }
 
   return false;
 }

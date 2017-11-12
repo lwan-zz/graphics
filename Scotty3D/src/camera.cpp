@@ -118,8 +118,10 @@ Ray Camera::generate_ray(double x, double y) const {
   // add or subtract pos?
 
   // just being pdantic
-  Vector3D origin = this->c2w * Vector3D(0, 0, 0) + pos; 
-  Vector3D position = this->c2w * Vector3D(x, y, 1) + pos;
+  //Vector3D origin = this->c2w * Vector3D(0, 0, 0) + pos; 
+  //Vector3D position = this->c2w * Vector3D(x, y, 1) + pos;
+  
+
 
   return Ray(origin, position);
 }
