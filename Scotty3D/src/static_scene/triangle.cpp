@@ -29,7 +29,7 @@ bool Triangle::intersect(const Ray& r, Intersection* isect) const {
   // implement ray-triangle intersection. When an intersection takes
   // place, the Intersection data should be updated accordingly
   // get triangle points
-  double F_THRESH = 0.000001;
+  double THRESH = 0.0000001;
 
   // get triangle vertices
   Vector3D p0 = this->mesh->positions[this->v1];
@@ -46,43 +46,33 @@ bool Triangle::intersect(const Ray& r, Intersection* isect) const {
                      this->mesh->normals[this->v2] + 
                      this->mesh->normals[this->v3]) / 3;
 
-  // check ray, plane parallelism
-  double dot_dir = dot(normal, r.d);
-  if (abs(dot_dir) < F_THRESH) {return false;}
-  double d = dot(normal, p0);
-  double t = (dot(r.o, normal) + d) / dot_dir;
+  Vector3D e1xd = cross(e1, r.d);
+  Vector3D sxe2 = cross(s, e2);
+  double denom =  dot(e1xd, e2);
 
-  // check if t within bounds
-  if (t > r.max_t || t < r.min_t) {return false;}
-  r.max_t = t;
+  // figure out if patch too small
+  if (denom < THRESH) {
+    //cout << "e1 x d dot e2 too small!" << endl;
+    return false;
+  }
 
-  // if point behind ray, return false
-  if (t < 0) {return false;}
-  Vector3D intersect = r.o + t * r.d;
+  double u = -dot(sxe2, r.d) / denom;
+  double v = dot(e1xd, s) / denom;
+  double t = -dot(sxe2, e1) / denom;
 
-  // check which side intersection is on
-  Vector3D p1_p0 = p1 - p0;
-  Vector3D intersect_p0 = intersect - p0;
-  if (dot(normal, cross(p1_p0, intersect_p0)) < 0) {return false;}
-
-  Vector3D p2_p1 = p2 - p1;
-  Vector3D intersect_p1 = intersect - p1;
-  if (dot(normal, cross(p2_p1, intersect_p1)) < 0) {return false;}  
-
-  Vector3D p0_p2 = p0 - p2;
-  Vector3D intersect_p2 = intersect - p2;
-  if (dot(normal, cross(p0_p2, intersect_p2)) < 0) {return false;}  
-
-  cout << "hit" << endl;
-
-  isect->t = t;
-  isect->n = normal;
-  isect->bsdf = this->mesh->get_bsdf();
-  isect->primitive = this;
-
-
-
-  return true;
+  // check direction of normals with 
+  
+  if (u > 0 && v > 0 && u < 1 && v < 1 && t < r.max_t) {
+    r.max_t = t;
+    isect->t = t;   
+    isect->n = normal;
+    isect->bsdf = this->mesh->get_bsdf();
+    isect->primitive = this;
+    return true;
+  }
+ 
+  return false;
+ 
 }
 
 void Triangle::draw(const Color& c) const {

@@ -519,16 +519,10 @@ Spectrum PathTracer::raytrace_pixel(size_t x, size_t y) {
     y_screen += y_sum / (double)num_samples;
   } 
 
-  //std::pair<double, double> screen_size = camera->get_screen_size();
-  //cout << "screen_size: " << screen_size.first << " " << screen_size.second << endl;
-  //cout << "samplebuffer: " << this->sampleBuffer.w << " " << this->sampleBuffer.h << endl;
+  double x_norm = (x_screen + 0.5) / sampleBuffer.w;
+  double y_norm = (y_screen + 0.5)/ sampleBuffer.h;
 
-  double x_norm = x_screen / sampleBuffer.w;
-  double y_norm = y_screen / sampleBuffer.h;
-
-  Vector2D p = Vector2D(x_norm, y_norm); // initialize point to x, y
-
-  return trace_ray(camera->generate_ray(p.x, p.y));
+  return trace_ray(camera->generate_ray(x_norm, y_norm));
 }
 
 void PathTracer::raytrace_tile(int tile_x, int tile_y, int tile_w, int tile_h) {

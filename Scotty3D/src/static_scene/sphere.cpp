@@ -13,7 +13,7 @@ bool Sphere::test(const Ray& r, double& t1, double& t2) const {
   // Implement ray - sphere intersection test.
   // Return true if there are intersections and writing the
   // smaller of the two intersection times in t1 and the larger in t2.
-  
+  cout << "spheretest" << endl;
   return false;
 }
 
@@ -21,7 +21,7 @@ bool Sphere::intersect(const Ray& r) const {
   // TODO (PathTracer):
   // Implement ray - sphere intersection.
   // Note that you might want to use the the Sphere::test helper here.
-
+  cout << "lonely interesct" << endl;
   return false;
 }
 
@@ -31,6 +31,37 @@ bool Sphere::intersect(const Ray& r, Intersection* isect) const {
   // Note again that you might want to use the the Sphere::test helper here.
   // When an intersection takes place, the Intersection data should be updated
   // correspondingly.
+  Vector3D L  = this->o - r.o;
+  double tca = dot(L, r.d);
+
+  if (tca < 0) {return false;}
+  
+  double d2 = dot(L, L) - tca * tca;
+  if (d2 > this->r2) {return false;}
+  double thc = sqrt(this->r2 - d2);  
+
+  double t1 = tca - thc;
+  double t2 = tca + thc;
+  double t;
+  // use the smaller of the intersections
+  // you can lambda this
+  if (t2 < t1) {swap(t1, t2);}
+  if (t1 < 0) {
+    t1 = t2;
+    if (t1 < 0) {
+      return false;
+    }
+  }
+ 
+  if (r.max_t < t1) {
+    r.max_t = t1;
+    Vector3D normal = ((r.o + t1 * r.d) - this->o).unit();
+    isect->t = t1;
+    isect->n = normal;
+    isect->bsdf = this->get_bsdf();
+    isect->primitive = this;
+    return true;
+  }
 
   return false;
 }
