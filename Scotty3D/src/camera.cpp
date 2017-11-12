@@ -108,27 +108,27 @@ void Camera::compute_position() {
                                 // to the world space view direction
 }
 
+/* 
+compute the normalized image coordinates and transform to world frame. 
+Used reference from [0]
+[0]: https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-generating-camera-rays/generating-camera-rays
+*/
 Ray Camera::generate_ray(double x, double y) const {
-  // TODO:
   // compute position of the input sensor sample coordinate on the
   // canonical sensor plane one unit away from the pinhole.
 
-  // apply c2w rotation
-  // translate by pos for each point, generate a ray using these points?
-  // add or subtract pos?
+  // convert to normalized coordinates in camera
+  // scale to aspect ratio of image
+  // scale to FOV of camera
 
-  // just being pdantic
-  //Vector3D origin = this->c2w * Vector3D(0, 0, 0) + pos; 
-  //Vector3D position = this->c2w * Vector3D(x, y, 1) + pos;
+  double cam_x = (2 * x - 1) * this->ar * tan(this->vFov / 2);
+  double cam_y = (1 - 2 * y) * tan(this->vFov / 2);
+  Vector3D cam_d = Vector3D(cam_x, cam_y, -1.0);
+
+  Vector3D world_d = this->c2w * cam_d;
+  Vector3D world_o = this->c2w * Vector3D(0.0, 0.0, 0.0);
   
-
-
-  return Ray(origin, position);
-}
-
-std::pair<size_t, size_t>  Camera::get_screen_size(void) {
-    std::pair<size_t, size_t>  screen_size(this->screenW, screenH);
-    return screen_size;
+  return Ray(world_o, world_d);
 }
 
 }  // namespace CMU462

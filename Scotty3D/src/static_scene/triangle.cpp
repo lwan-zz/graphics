@@ -18,6 +18,17 @@ BBox Triangle::get_bbox() const {
 }
 
 bool Triangle::intersect(const Ray& r) const {
+  // TODO (PathTracer): implement ray-triangle intersection
+
+  cout << "no isect" << endl;
+  return false;
+}
+
+bool Triangle::intersect(const Ray& r, Intersection* isect) const {
+  // TODO (PathTracer):
+  // implement ray-triangle intersection. When an intersection takes
+  // place, the Intersection data should be updated accordingly
+  // get triangle points
   double F_THRESH = 0.000001;
 
   // get triangle vertices
@@ -41,6 +52,10 @@ bool Triangle::intersect(const Ray& r) const {
   double d = dot(normal, p0);
   double t = (dot(r.o, normal) + d) / dot_dir;
 
+  // check if t within bounds
+  if (t > r.max_t || t < r.min_t) {return false;}
+  r.max_t = t;
+
   // if point behind ray, return false
   if (t < 0) {return false;}
   Vector3D intersect = r.o + t * r.d;
@@ -59,23 +74,15 @@ bool Triangle::intersect(const Ray& r) const {
   if (dot(normal, cross(p0_p2, intersect_p2)) < 0) {return false;}  
 
   cout << "hit" << endl;
+
+  isect->t = t;
+  isect->n = normal;
+  isect->bsdf = this->mesh->get_bsdf();
+  isect->primitive = this;
+
+
+
   return true;
-}
-
-bool Triangle::intersect(const Ray& r, Intersection* isect) const {
-  // TODO (PathTracer):
-  // implement ray-triangle intersection. When an intersection takes
-  // place, the Intersection data should be updated accordingly
-  //Vector2D e1_d = Vector2D()
-
-  // get triangle points
-  bool intersect = this->intersect(r);  
-  
-  if (!intersect) {
-    cout << "miss" << endl;
-  }
-
-  return false;
 }
 
 void Triangle::draw(const Color& c) const {

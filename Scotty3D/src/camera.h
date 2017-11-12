@@ -2,7 +2,6 @@
 #define CMU462_CAMERA_H
 
 #include <iostream>
-#include <utility>
 
 #include "collada/camera_info.h"
 #include "CMU462/matrix3x3.h"
@@ -69,7 +68,6 @@ class Camera {
   double near_clip() const { return nClip; }
   double far_clip() const { return fClip; }
 
-
   /**
    * Returns a world-space ray from the camera that corresponds to a
    * ray exiting the camera that deposits light at the sensor plane
@@ -81,11 +79,6 @@ class Camera {
    * \param y y-coordinate of the ray sample in the view plane
    */
   Ray generate_ray(double x, double y) const;
-
-  /*
-    Get the screen size
-  */
-  std::pair<size_t, size_t> get_screen_size();
 
  private:
   // Computes pos, screenXDir, screenYDir from target, r, phi, theta.

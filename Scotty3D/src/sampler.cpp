@@ -5,15 +5,10 @@ namespace CMU462 {
 // Uniform Sampler2D Implementation //
 
 Vector2D UniformGridSampler2D::get_sample() const {
-  // use random for sampling
-  std::random_device rd;
-  std::default_random_engine generator(rd());
-  std::uniform_real_distribution<double> uni(0.0,1.0);
-
-  double x = uni(generator);
-  double y = uni(generator);
-
-  return Vector2D(x, y);
+  // TODO (PathTracer):
+  // Implement uniform 2D grid sampler
+  
+  return Vector2D(0.5, 0.5);
 }
 
 // Uniform Hemisphere Sampler3D Implementation //
