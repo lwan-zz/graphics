@@ -34,7 +34,7 @@ bool Sphere::intersect(const Ray& r, Intersection* isect) const {
   Vector3D L  = this->o - r.o;
   double tca = dot(L, r.d);
 
-  if (tca < 0) {return false;}
+  if (tca < 0) {return false;} // misses sphere
   
   double d2 = dot(L, L) - tca * tca;
   if (d2 > this->r2) {return false;}
@@ -53,7 +53,7 @@ bool Sphere::intersect(const Ray& r, Intersection* isect) const {
     }
   }
  
-  if (r.max_t < t1) {
+  if (t1 < r.max_t) {
     r.max_t = t1;
     Vector3D normal = ((r.o + t1 * r.d) - this->o).unit();
     isect->t = t1;

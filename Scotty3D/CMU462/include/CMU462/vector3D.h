@@ -5,6 +5,7 @@
 
 #include <ostream>
 #include <cmath>
+#include <iostream> 
 
 namespace CMU462 {
 
@@ -40,6 +41,11 @@ class Vector3D {
    * Initializes from existing vector
    */
   Vector3D( const Vector3D& v ) : x( v.x ), y( v.y ), z( v.z ) { }
+
+  // prints
+  inline void print(void) {
+    std::cout << this->x << " " << this->y << " " << this->x << std::endl;
+  }
 
   // returns reference to the specified component (0-based indexing: x, y, z)
   inline double& operator[] ( const int& index ) {

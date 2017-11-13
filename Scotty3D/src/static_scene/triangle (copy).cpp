@@ -29,12 +29,23 @@ bool Triangle::intersect(const Ray& r, Intersection* isect) const {
   // implement ray-triangle intersection. When an intersection takes
   // place, the Intersection data should be updated accordingly
   // get triangle points
-  double THRESH = 1e-8;
+  double THRESH = 0.0000001;
 
+  //cout << "triangle vertices: " << this->v1 << " " << this->v2 << " " << this->v3 << endl;
+  //cout << "vectorsize: " << this->v.size() << endl;
+  //cout << "vector: " << this->v[v1] << " " << this->v[v2] << " " << this->v[v3] << endl;
   // get triangle vertices
+  
   Vector3D p0 = this->mesh->positions[this->v1];
   Vector3D p1 = this->mesh->positions[this->v2];
   Vector3D p2 = this->mesh->positions[this->v3];
+
+  // calculate normal. looks like the attribute array is empty??
+  Vector3D n = cross(p1-p0, p2-p0);
+  n.print();
+  //p0.print();
+  //p1.print();
+  //p2.print();
 
   // make vectors
   Vector3D s = r.o - p0;
@@ -46,31 +57,56 @@ bool Triangle::intersect(const Ray& r, Intersection* isect) const {
                      this->mesh->normals[this->v2] + 
                      this->mesh->normals[this->v3]) / 3;
 
-  Vector3D e1xd = cross(e1, r.d);
-  Vector3D sxe2 = cross(s, e2);
-  double denom =  dot(e1xd, e2);
+  //cout << "normals" << endl;
+  //this->mesh->normals[this->v1].print();
+  //this->mesh->normals[this->v2].print();
+  //this->mesh->normals[this->v3].print();
 
-  // figure out if patch too small
-  if (denom < THRESH) {
-    //cout << "e1 x d dot e2 too small!" << endl;
+  // check ray / plane parallelism
+  double n_dot_raydir = dot(normal, r.d);
+  if(abs(n_dot_raydir) < 0.000001) {
+    cout << "parallel ray /plane" << endl;
+    return false;
+  }
+  cout << "normal: "; normal.print();
+  cout << "p0: "; p0.print();
+  
+  // check if ray behind triangle
+  double d = dot(normal, p0); 
+  double t = (dot(normal, r.o) + d) / n_dot_raydir;
+  cout << "t, d: " << t << " " << d << endl;
+  //getchar();
+
+  if (t < 0) {
+    cout << "behind" << endl;
     return false;
   }
 
-  double u = -dot(sxe2, r.d) / denom;
-  double v = dot(e1xd, s) / denom;
-  double t = -dot(sxe2, e1) / denom;
+  Vector3D p =  r.o + t * r.d;
+  // check if point is on the correct side of each edge of triangle
 
-  // check direction of normals with 
-  if (u > 0 && v > 0 && u < 1 && v < 1 && t < r.max_t) {
-    r.max_t = t;
-    isect->t = t;   
-    isect->n = normal;
-    isect->bsdf = this->mesh->get_bsdf();
-    isect->primitive = this;
-    return true;
+  Vector3D s0 = p1 - p0;
+  Vector3D s1 = p2 - p1;
+  Vector3D s2 = p0 - p2;
+
+  vector <Vector3D> sides = {p1 - p0, p2 - p1, p0 - p2};
+
+  for (auto& side : sides) {
+    Vector3D vs = p - side;
+    if (dot(normal, cross(side, vs)) < 0) {
+        cout << "p on wrong side" << endl;
+        return false;
+    }
   }
+
+  cout << "hit" << endl;
+  r.max_t = t;
+  isect->t = t;   
+  isect->n = normal;
+  isect->bsdf = this->mesh->get_bsdf();
+  isect->primitive = this;
  
-  return false;
+  return true;
  
 }
 
