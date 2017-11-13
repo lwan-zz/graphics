@@ -60,6 +60,11 @@ class BVHAccel : public Aggregate {
    */
   ~BVHAccel();
 
+  /*
+  Recursive partitioning method
+  */
+  void partition(BVHNode &bvhnode, size_t max_leaf_size);
+
   /**
    * Get the world space bounding box of the aggregate.
    * \return world space bounding box of the aggregate
@@ -113,6 +118,8 @@ class BVHAccel : public Aggregate {
    * Draw the BVH outline with OpenGL - used in visualizer
    */
   void drawOutline(const Color& c) const {}
+
+  int computeBucket(double this_centroid, double axis_min, double axis_max);
 
  private:
   BVHNode* root;  ///< root node of the BVH

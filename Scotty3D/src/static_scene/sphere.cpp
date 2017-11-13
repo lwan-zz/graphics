@@ -44,7 +44,6 @@ bool Sphere::intersect(const Ray& r, Intersection* isect) const {
   double t2 = tca + thc;
   double t;
   // use the smaller of the intersections
-  // you can lambda this
   if (t2 < t1) {swap(t1, t2);}
   if (t1 < 0) {
     t1 = t2;
