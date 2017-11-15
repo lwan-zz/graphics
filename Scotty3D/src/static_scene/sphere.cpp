@@ -18,11 +18,8 @@ bool Sphere::test(const Ray& r, double& t1, double& t2) const {
 }
 
 bool Sphere::intersect(const Ray& r) const {
-  // TODO (PathTracer):
-  // Implement ray - sphere intersection.
-  // Note that you might want to use the the Sphere::test helper here.
-  cout << "lonely interesct" << endl;
-  return false;
+  Intersection isect;
+  return intersect(r, &isect);
 }
 
 bool Sphere::intersect(const Ray& r, Intersection* isect) const {

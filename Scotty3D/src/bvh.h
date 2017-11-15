@@ -96,6 +96,11 @@ class BVHAccel : public Aggregate {
    */
   bool intersect(const Ray& r, Intersection* i) const;
 
+  /*
+    Use method described in slides for front/back traversal
+  */
+  void findClosestHit(const Ray &ray, BVHNode &node, Intersection *isect) const;
+
   /**
    * Get BSDF of the surface material
    * Note that this does not make sense for the BVHAccel aggregate

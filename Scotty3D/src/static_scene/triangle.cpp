@@ -34,10 +34,8 @@ BBox Triangle::get_bbox() const {
 }
 
 bool Triangle::intersect(const Ray& r) const {
-  // TODO (PathTracer): implement ray-triangle intersection
-
-  cout << "no isect" << endl;
-  return false;
+  Intersection isect;
+  return intersect(r, &isect);
 }
 
 bool Triangle::intersect(const Ray& r, Intersection* isect) const {
