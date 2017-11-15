@@ -1,6 +1,7 @@
 # Build directory
 build/
 release/
+debug/
 # Useless files
 .DS_STORE
 *.swp
