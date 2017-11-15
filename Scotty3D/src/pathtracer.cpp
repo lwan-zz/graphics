@@ -411,8 +411,7 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
 #ifdef ENABLE_RAY_LOGGING
   log_ray_hit(r, isect.t);
 #endif
-  cout << "problem" << endl;
-  cout << isect.t << endl;
+
   Spectrum L_out = isect.bsdf->get_emission();  // Le
 
   // TODO (PathTracer):

@@ -124,66 +124,54 @@ bool BVHAccel::intersect(const Ray &ray) const {
   // Implement ray - bvh aggregate intersection test. A ray intersects
   // with a BVH aggregate if and only if it intersects a primitive in
   // the BVH that is not an aggregate.
+  cout << "bvhaccel no isect" << endl;
   Intersection isect;
   return intersect(ray, &isect);
 }
 
 bool BVHAccel::intersect(const Ray &ray, Intersection *isect) const {
-  // TODO (PathTracer):
   // Implement ray - bvh aggregate intersection test. A ray intersects
   // with a BVH aggregate if and only if it intersects a primitive in
   // the BVH that is not an aggregate. When an intersection does happen.
   // You should store the non-aggregate primitive in the intersection data
   // and not the BVH aggregate itself.
-
-  /*
-  // first check if ray even intersects the entire bvh bbox
-  if (!intersect bbox) {
-    return false
-  } else {
-    then call findclosesthit, populate isect with clsoest hit with traversal
-  }
-  */
-  double t0, t1;
-  // first check if ray even hits the bvh parent box
-  if (!this->get_bbox().intersect(ray, t0, t1)) {
-    return false;
-  } else {
-    findClosestHit(ray, *root, isect);
-  }
-  return true;
   
+  findClosestHit(ray, *root, isect);
+  if (isect->t < INF_D) { return true; }
+  return false;
 }
 
-void BVHAccel::findClosestHit(const Ray &ray, BVHNode &node, Intersection *isect) const {
-  cout << "finding closest hit" << endl;
-  getchar();
+void BVHAccel::findClosestHit(const Ray &ray, BVHNode &node, Intersection *isect) const {  
+  double tmin_node = -INF_D, tmax_node = INF_D;
+  // if the ray doesn't intersect the box at all, skip checking the box
+  if (!node.bb.intersect(ray, tmin_node, tmax_node)) { return; }
+
   if (node.isLeaf()) {
-    vector<Primitive*>::iterator primitive;
+    // make a new intersection object because I keep segfaulting otherwise
     Intersection new_isect;
     for (int prim_idx = node.start; prim_idx != node.start + node.range; prim_idx++) {
-      double t0, t1;
-      bool hit = this->primitives[prim_idx]->intersect(ray, &new_isect);
-      if (hit && t0 < isect->t) {
+      // check for intersection with primitive
+      bool hit = primitives[prim_idx]->intersect(ray, &new_isect);
+      if (hit && new_isect.t < isect->t) {
         *isect = new_isect;
       }
     }
   } else {
-      double l_t0, l_t1, r_t0, r_t1, second_t;
-      node.r->bb.intersect(ray, r_t0, r_t1);
-      node.l->bb.intersect(ray, l_t0, l_t1);
-      cout << "closest t for each l, r node" << endl;
-      cout << l_t0 << " " << r_t0 << endl;
-      // not changing anything, so just make pointers
-      BVHNode* first = (r_t0 < l_t0) ? node.r : node.l;
-      BVHNode* second = (r_t0 < l_t0) ? node.l : node.r;
+    double tmin_l = -INF_D, tmax_l = INF_D;
+    double tmin_r = -INF_D, tmax_r = INF_D;
 
-      // save the smallest t
-      second_t = (r_t0 < l_t0) ? r_t0 : l_t0; 
+    node.l->bb.intersect(ray, tmin_l, tmax_l);
+    node.r->bb.intersect(ray, tmin_l, tmax_r);
 
-      findClosestHit(ray, *first, isect);
-      if (second_t < isect->t) { findClosestHit(ray, *second, isect); }
-  }
+    BVHNode* first = (tmin_l <= tmin_r) ? node.l : node.r;
+    BVHNode* second = (tmin_l <= tmin_r) ? node.r : node.l;
+    // hold onto the t-val of the second node
+    double second_t = (tmin_l <= tmin_r) ? tmin_l : tmin_r;
+
+    findClosestHit(ray, *first, isect);
+    if (second_t < isect->t)
+      findClosestHit(ray, *second, isect);
+  }  
 }
 
 }  // namespace StaticScene
