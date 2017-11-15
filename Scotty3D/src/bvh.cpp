@@ -120,11 +120,10 @@ inline int BVHAccel::computeBucket(double this_centroid, double axis_min, double
 BBox BVHAccel::get_bbox() const { return root->bb; }
 
 bool BVHAccel::intersect(const Ray &ray) const {
-  // TODO (PathTracer):
   // Implement ray - bvh aggregate intersection test. A ray intersects
   // with a BVH aggregate if and only if it intersects a primitive in
   // the BVH that is not an aggregate.
-  cout << "bvhaccel no isect" << endl;
+  
   Intersection isect;
   return intersect(ray, &isect);
 }
