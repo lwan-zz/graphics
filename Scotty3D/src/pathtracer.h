@@ -172,6 +172,9 @@ class PathTracer {
    */
   Spectrum raytrace_pixel(size_t x, size_t y);
 
+  // raytrace a sample
+  Spectrum raytrace_sample(double x_screen, double y_screen);
+
   /**
    * Raytrace a tile of the scene and update the frame buffer. Is run
    * in a worker thread.

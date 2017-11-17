@@ -24,7 +24,7 @@ using std::max;
 
 namespace CMU462 {
 
-#define ENABLE_RAY_LOGGING 1
+//#define ENABLE_RAY_LOGGING 1
 
 PathTracer::PathTracer(size_t ns_aa, size_t max_ray_depth, size_t ns_area_light,
                        size_t ns_diff, size_t ns_glsy, size_t ns_refr,
@@ -503,6 +503,14 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
   return L_out;
 }
 
+
+Spectrum PathTracer::raytrace_sample(double x_screen, double y_screen) {
+  double x_norm = x_screen / sampleBuffer.w;
+  double y_norm = y_screen / sampleBuffer.h;
+
+  return trace_ray(camera->generate_ray(x_norm, y_norm));    
+}
+
 Spectrum PathTracer::raytrace_pixel(size_t x, size_t y) {
   // TODO (PathTracer):
   // Sample the pixel with coordinate (x,y) and return the result spectrum.
@@ -512,27 +520,34 @@ Spectrum PathTracer::raytrace_pixel(size_t x, size_t y) {
   double y_screen = (double) y;
 
   if (num_samples > 1) {
-    double x_sum = 0.;
-    double y_sum = 0.;
+    double this_x_screen, this_y_screen;
     Vector2D vec;
+    Spectrum sample_spec = Spectrum(); 
 
     for (int ii = 0; ii != num_samples; ii++) {
+      //cout << ii << endl;
       vec = this->gridSampler->get_sample();
-      x_sum += vec.x;
-      y_sum += vec.y;
-    }
+      this_x_screen = x_screen + vec.x;
+      this_y_screen = y_screen + vec.y;
+      //cout << sample_spec.r << " " << sample_spec.g << " " << sample_spec.b << endl;
+      sample_spec += raytrace_sample(this_x_screen, this_y_screen);
+      //getchar();
 
-    x_screen += x_sum / (double)num_samples;
-    y_screen += y_sum / (double)num_samples;
+    }
+    sample_spec = sample_spec * (1.0 / (float) num_samples);
+    
+    /*if (sample_spec.r > 0) {
+        cout << sample_spec.r << " " << sample_spec.g << " " << sample_spec.b << endl;
+        getchar();
+    }*/
+    
+    return sample_spec;
+
   } else {
     x_screen += 0.5;
     y_screen += 0.5;
+    return raytrace_sample(x_screen, y_screen);
   }
-
-  double x_norm = x_screen / sampleBuffer.w;
-  double y_norm = y_screen / sampleBuffer.h;
-
-  return trace_ray(camera->generate_ray(x_norm, y_norm));
 }
 
 void PathTracer::raytrace_tile(int tile_x, int tile_y, int tile_w, int tile_h) {
