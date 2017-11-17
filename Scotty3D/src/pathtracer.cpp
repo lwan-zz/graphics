@@ -36,7 +36,6 @@ PathTracer::PathTracer(size_t ns_aa, size_t max_ray_depth, size_t ns_area_light,
   this->ns_glsy = ns_diff;
   this->ns_refr = ns_refr;
 
-
   if (envmap) {
     this->envLight = new EnvironmentLight(envmap);
   } else {
@@ -484,13 +483,26 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
     }
   }
 
-  // TODO (PathTracer):
+
+
   // ### (Task 5) Compute an indirect lighting estimate using pathtracing with Monte Carlo.
-
-
   // Note that Ray objects have a depth field now; you should use this to avoid
   // traveling down one path forever.
-  
+  while (r.depth <= this->max_ray_depth) {
+    r.depth++;
+    Vector3D w_in;
+    float* pdf;
+    // generate sample
+    // http://15462.courses.cs.cmu.edu/fall2017/lecture/renderingequation/slide_050
+    // get f
+    // get Li
+    // add li using equation
+
+    // roll the die, see if you quit or not per the pdf
+    Spectrum sample_spectrum = isect.bsdf->sample_f(wo, wi, pdf);
+
+  //if ()
+
   // (1) randomly select a new ray direction (it may be
   // reflection or transmittence ray depending on
   // surface type -- see BSDF::sample_f()
@@ -499,7 +511,7 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
 
   // (3) evaluate weighted reflectance contribution due 
   // to light from this direction
-
+  }
   return L_out;
 }
 
@@ -512,7 +524,6 @@ Spectrum PathTracer::raytrace_sample(double x_screen, double y_screen) {
 }
 
 Spectrum PathTracer::raytrace_pixel(size_t x, size_t y) {
-  // TODO (PathTracer):
   // Sample the pixel with coordinate (x,y) and return the result spectrum.
   // The sample rate is given by the number of camera rays per pixel.
   int num_samples = ns_aa;
@@ -525,27 +536,17 @@ Spectrum PathTracer::raytrace_pixel(size_t x, size_t y) {
     Spectrum sample_spec = Spectrum(); 
 
     for (int ii = 0; ii != num_samples; ii++) {
-      //cout << ii << endl;
       vec = this->gridSampler->get_sample();
       this_x_screen = x_screen + vec.x;
       this_y_screen = y_screen + vec.y;
-      //cout << sample_spec.r << " " << sample_spec.g << " " << sample_spec.b << endl;
       sample_spec += raytrace_sample(this_x_screen, this_y_screen);
-      //getchar();
-
     }
-    sample_spec = sample_spec * (1.0 / (float) num_samples);
-    
-    /*if (sample_spec.r > 0) {
-        cout << sample_spec.r << " " << sample_spec.g << " " << sample_spec.b << endl;
-        getchar();
-    }*/
-    
-    return sample_spec;
 
+    return sample_spec * (1.0 / (float) num_samples);
   } else {
     x_screen += 0.5;
     y_screen += 0.5;
+
     return raytrace_sample(x_screen, y_screen);
   }
 }

@@ -36,7 +36,9 @@ Vector3D CosineWeightedHemisphereSampler3D::get_sample() const {
 }
 
 Vector3D CosineWeightedHemisphereSampler3D::get_sample(float *pdf) const {
-  // You may implement this, but don't have to.
+  UniformHemisphereSampler3D uni;
+  Vector3D sample = uni.get_sample();
+  
   return Vector3D(0, 0, 1);
 }
 
