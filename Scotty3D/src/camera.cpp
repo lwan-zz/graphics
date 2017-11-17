@@ -122,14 +122,14 @@ Ray Camera::generate_ray(double x, double y) const {
   // scale to FOV of camera
   //  cout << vFov << endl;
 
-  double cam_x = -(2 * x - 1) * this->ar * tan(this->hFov * 3.14159 / 180.);
-  double cam_y = (1 - 2 * y) * tan(this->hFov * 3.14159 / 180.);
+  double cam_x = ((x - 0.5) * tan(this->hFov / 2 * 3.14159 / 180.)) * this->ar;
+  double cam_y = -(-y + 0.5) * tan(this->vFov / 2 * 3.14159 / 180.);
   Vector3D cam_d = Vector3D(cam_x, cam_y, -1.0);
 
-  Vector3D world_d = (this->c2w * cam_d) + this->pos;
+  Vector3D world_d = this->c2w * cam_d.unit();
   Vector3D world_o = (this->c2w * Vector3D(0.0, 0.0, 0.0)) + this->pos;
 
-  return Ray(world_o, -world_d.unit());
+  return Ray(world_o, world_d.unit());
 }
 
 }  // namespace CMU462

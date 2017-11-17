@@ -462,7 +462,7 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
         const Vector3D& w_in = w2o * dir_to_light;
         if (w_in.z < 0) continue;
 
-          // note that computing dot(n,w_in) is simple
+        // note that computing dot(n,w_in) is simple
         // in surface coordinates since the normal is (0,0,1)
         double cos_theta = w_in.z;
           
@@ -472,7 +472,14 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
         // TODO (PathTracer):
         // (Task 4) Construct a shadow ray and compute whether the intersected surface is
         // in shadow. Only accumulate light if not in shadow.
-        L_out += (cos_theta / (num_light_samples * pr)) * f * light_L;
+        Vector3D shadow_o = hit_p  + EPS_D * dir_to_light;
+        Ray shadow(shadow_o, dir_to_light);
+
+        if (isect.primitive->intersect(shadow)) {
+            continue;
+        } else {
+            L_out += (cos_theta / (num_light_samples * pr)) * f * light_L;
+        }
       }
     }
   }
