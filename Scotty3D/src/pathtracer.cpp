@@ -468,7 +468,6 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
         // evaluate surface bsdf
         const Spectrum& f = isect.bsdf->f(w_out, w_in);
 
-        // TODO (PathTracer):
         // (Task 4) Construct a shadow ray and compute whether the intersected surface is
         // in shadow. Only accumulate light if not in shadow.
         Vector3D shadow_o = hit_p  + EPS_D * dir_to_light;
@@ -483,8 +482,7 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
     }
   }
 
-
-
+  /*
   // ### (Task 5) Compute an indirect lighting estimate using pathtracing with Monte Carlo.
   // Note that Ray objects have a depth field now; you should use this to avoid
   // traveling down one path forever.
@@ -492,6 +490,8 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
     r.depth++;
     Vector3D w_in;
     float* pdf;
+
+
     // generate sample
     // http://15462.courses.cs.cmu.edu/fall2017/lecture/renderingequation/slide_050
     // get f
@@ -512,6 +512,7 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
   // (3) evaluate weighted reflectance contribution due 
   // to light from this direction
   }
+  */
   return L_out;
 }
 

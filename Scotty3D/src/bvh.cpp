@@ -102,7 +102,7 @@ void BVHAccel::partition(BVHNode &bvhnode, size_t max_leaf_size) {
             axis_val_compare);
 
   // create new left, right nodes from sorted primitives  
-  bvhnode.l = new BVHNode(bvh_left_bbox, bvhnode.start, num_bvh_left - 1);
+  bvhnode.l = new BVHNode(bvh_left_bbox, bvhnode.start, num_bvh_left );
   bvhnode.r = new BVHNode(bvh_right_bbox, bvhnode.start + num_bvh_left, num_bvh_right);
 
   partition(*bvhnode.l, max_leaf_size);

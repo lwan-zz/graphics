@@ -42,8 +42,11 @@ Spectrum DiffuseBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) {
   // TODO (PathTracer):
   // Implement DiffuseBSDF
   // random sample using the CosineWeightedHemisphereSampler3D sampler
-  
-
+  /*
+  CosineWeightedHemisphereSampler3D sampler;
+  *wo = sampler.get_sample(pdf);
+  Spectrum diffuse_sample = f(wo, wi);
+    */
   return Spectrum();
 }
 

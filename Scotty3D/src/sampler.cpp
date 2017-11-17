@@ -36,10 +36,19 @@ Vector3D CosineWeightedHemisphereSampler3D::get_sample() const {
 }
 
 Vector3D CosineWeightedHemisphereSampler3D::get_sample(float *pdf) const {
-  UniformHemisphereSampler3D uni;
-  Vector3D sample = uni.get_sample();
-  
-  return Vector3D(0, 0, 1);
+  double Xi1 = (double)(std::rand()) / RAND_MAX;
+  double Xi2 = (double)(std::rand()) / RAND_MAX;
+
+  double r = sqrt(Xi1);
+  double theta = 2. * PI * Xi2;
+
+  double x = r * cos(theta);
+  double y = r * sin(theta);  
+  double z = sqrt(std::max(0., 1. - Xi1));
+
+  *pdf = z;
+
+  return Vector3D(x, y, z);
 }
 
 }  // namespace CMU462
