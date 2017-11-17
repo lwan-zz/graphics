@@ -123,7 +123,7 @@ Ray Camera::generate_ray(double x, double y) const {
   //  cout << vFov << endl;
 
   double cam_x = ((x - 0.5) * tan(this->hFov / 2 * 3.14159 / 180.)) * this->ar;
-  double cam_y = -(-y + 0.5) * tan(this->vFov / 2 * 3.14159 / 180.);
+  double cam_y = -(-y + 0.5) * tan(this->hFov / 2 * 3.14159 / 180.);
   Vector3D cam_d = Vector3D(cam_x, cam_y, -1.0);
 
   Vector3D world_d = this->c2w * cam_d.unit();

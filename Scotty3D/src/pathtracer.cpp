@@ -512,11 +512,11 @@ Spectrum PathTracer::raytrace_pixel(size_t x, size_t y) {
   double y_screen = (double) y;
 
   if (num_samples > 1) {
-    double x_sum = 0;
-    double y_sum = 0;
+    double x_sum = 0.;
+    double y_sum = 0.;
     Vector2D vec;
 
-    for (int ii = 0; ii != 8; ii++) {
+    for (int ii = 0; ii != num_samples; ii++) {
       vec = this->gridSampler->get_sample();
       x_sum += vec.x;
       y_sum += vec.y;
@@ -524,10 +524,13 @@ Spectrum PathTracer::raytrace_pixel(size_t x, size_t y) {
 
     x_screen += x_sum / (double)num_samples;
     y_screen += y_sum / (double)num_samples;
-  } 
+  } else {
+    x_screen += 0.5;
+    y_screen += 0.5;
+  }
 
-  double x_norm = (x_screen + 0.5) / sampleBuffer.w;
-  double y_norm = (y_screen + 0.5)/ sampleBuffer.h;
+  double x_norm = x_screen / sampleBuffer.w;
+  double y_norm = y_screen / sampleBuffer.h;
 
   return trace_ray(camera->generate_ray(x_norm, y_norm));
 }

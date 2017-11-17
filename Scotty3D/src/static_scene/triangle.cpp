@@ -39,11 +39,8 @@ bool Triangle::intersect(const Ray& r) const {
 }
 
 bool Triangle::intersect(const Ray& r, Intersection* isect) const {
-  // TODO (PathTracer):
   // implement ray-triangle intersection. When an intersection takes
   // place, the Intersection data should be updated accordingly
-  // get triangle points
-  double THRESH = 1e-8;
 
   // get triangle vertices
   Vector3D p0 = this->mesh->positions[this->v1];
@@ -60,21 +57,19 @@ bool Triangle::intersect(const Ray& r, Intersection* isect) const {
   double denom =  dot(e1xd, e2);
 
   // figure out if patch too small
-  if (denom < THRESH) {
-    //cout << "e1 x d dot e2 too small!" << endl;
-    return false;
-  }
+  if (abs(denom) < EPS_D) { return false;}
 
   double u = -dot(sxe2, r.d) / denom;
   double v = dot(e1xd, s) / denom;
   double t = -dot(sxe2, e1) / denom;
 
   // check direction of normals with 
-  if (u > 0 && v > 0 && u < 1 && v < 1 && t < r.max_t && t > r.min_t) {
+  if (u > 0 && v > 0 && u < 1 && u + v < 1 && t < r.max_t && t > r.min_t) {
     Vector3D normal = u * this->mesh->normals[this->v1] + 
                       v * this->mesh->normals[this->v2] + 
                       (1. - u - v) * this->mesh->normals[this->v3];
 
+    if (dot(r.d, normal) < 0) { normal = -normal; }
     r.max_t = t;
     isect->t = t;   
     isect->n = normal;
