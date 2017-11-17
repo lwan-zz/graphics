@@ -122,8 +122,8 @@ Ray Camera::generate_ray(double x, double y) const {
   // scale to FOV of camera
   //  cout << vFov << endl;
 
-  double cam_x = (2 * x - 1) * this->ar / tan(this->vFov / 2 * 3.14159 / 180);
-  double cam_y = (1 - 2 * y) / tan(this->vFov / 2 * 3.14159 / 180);
+  double cam_x = -(2 * x - 1) * this->ar * tan(this->hFov * 3.14159 / 180.);
+  double cam_y = (1 - 2 * y) * tan(this->hFov * 3.14159 / 180.);
   Vector3D cam_d = Vector3D(cam_x, cam_y, -1.0);
 
   Vector3D world_d = (this->c2w * cam_d) + this->pos;

@@ -59,6 +59,8 @@ bool Triangle::intersect(const Ray& r, Intersection* isect) const {
   Vector3D normal = (this->mesh->normals[this->v1] + 
                      this->mesh->normals[this->v2] + 
                      this->mesh->normals[this->v3]) / 3;
+  // definitely do better interpolation
+
 
   Vector3D e1xd = cross(e1, r.d);
   Vector3D sxe2 = cross(s, e2);
@@ -75,7 +77,7 @@ bool Triangle::intersect(const Ray& r, Intersection* isect) const {
   double t = -dot(sxe2, e1) / denom;
 
   // check direction of normals with 
-  if (u > 0 && v > 0 && u < 1 && v < 1 && t < r.max_t) {
+  if (u > 0 && v > 0 && u < 1 && v < 1 && t < r.max_t && t > r.min_t) {
     r.max_t = t;
     isect->t = t;   
     isect->n = normal;

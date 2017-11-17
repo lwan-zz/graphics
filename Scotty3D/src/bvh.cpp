@@ -11,8 +11,6 @@ using namespace std;
 namespace CMU462 {
 namespace StaticScene {
 
-#define N_BINS 10
-
 BVHAccel::BVHAccel(const std::vector<Primitive *> &_primitives,
                    size_t max_leaf_size) {
   this->primitives = _primitives;
@@ -28,13 +26,11 @@ BVHAccel::BVHAccel(const std::vector<Primitive *> &_primitives,
 
 
 BVHAccel::~BVHAccel() {
-  // TODO (PathTracer):
   // Implement a proper destructor for your BVH accelerator aggregate
   delete this->root;
 }
 
 void BVHAccel::partition(BVHNode &bvhnode, size_t max_leaf_size) {
-  
   // base case
   if (bvhnode.range <= max_leaf_size) {return;}
 
@@ -100,7 +96,7 @@ void BVHAccel::partition(BVHNode &bvhnode, size_t max_leaf_size) {
   auto axis_val_compare = [&bvh_axis] (Primitive* a, Primitive* b) {
     return a->get_bbox().centroid()[bvh_axis] < b->get_bbox().centroid()[bvh_axis];
   };
-  // sort
+  // sort primitives in the node
   std::sort(this->primitives.begin() + bvhnode.start, 
             this->primitives.begin() + bvhnode.start + bvhnode.range, 
             axis_val_compare);
@@ -123,7 +119,7 @@ bool BVHAccel::intersect(const Ray &ray) const {
   // Implement ray - bvh aggregate intersection test. A ray intersects
   // with a BVH aggregate if and only if it intersects a primitive in
   // the BVH that is not an aggregate.
-  
+
   Intersection isect;
   return intersect(ray, &isect);
 }
