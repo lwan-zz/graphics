@@ -15,6 +15,8 @@
 #include "image.h"
 #include "work_queue.h"
 
+#include "intersection.h"
+
 #include "static_scene/scene.h"
 using CMU462::StaticScene::Scene;
 
@@ -162,11 +164,16 @@ class PathTracer {
    */
   void visualize_accel() const;
 
+  // trace incident light
+  Spectrum raytrace_incident(const Ray &r, Vector3D &hit_p, Vector3D &hit_n, CMU462::StaticScene::Intersection &isect);
+
+  // trace reflections using monte carlo sampling
+  Spectrum raytrace_reflection(const Ray &r, Vector3D &hit_p, Vector3D &hit_n, CMU462::StaticScene::Intersection &isect);
+
   /**
    * Trace an ray in the scene.
    */
-  Spectrum trace_ray(const Ray& ray);
-
+  Spectrum trace_ray(const Ray& r);
   /**
    * Trace a camera ray given by the pixel coordinate.
    */

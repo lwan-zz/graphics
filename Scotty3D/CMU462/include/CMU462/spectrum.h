@@ -3,6 +3,7 @@
 
 #include "CMU462.h"
 #include "color.h"
+#include <iostream>
 
 namespace CMU462 {
 
@@ -35,6 +36,9 @@ class Spectrum {
   Spectrum(const uint8_t *arr);
 
   // operators //
+  inline void print() {
+    std::cout << r << " " << g << " " << b << std::endl;
+  }
 
   inline Spectrum operator+(const Spectrum &rhs) const {
     return Spectrum(r + rhs.r, g + rhs.g, b + rhs.b);
