@@ -6,6 +6,7 @@ namespace StaticScene {
 EnvironmentLight::EnvironmentLight(const HDRImageBuffer* envMap)
     : envMap(envMap) {
   // TODO: (PathTracer) initialize things here as needed
+  
 }
 
 Spectrum EnvironmentLight::sample_L(const Vector3D& p, Vector3D* wi,
