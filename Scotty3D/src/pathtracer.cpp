@@ -472,18 +472,21 @@ Spectrum PathTracer::raytrace_incident(const Ray &r, Vector3D &hit_p, Vector3D &
         // (Task 4) Construct a shadow ray and compute whether the intersected surface is
         // in shadow. Only accumulate light if not in shadow.
         Vector3D shadow_o = hit_p  + EPS_D * dir_to_light;
-        Ray shadow(shadow_o, dir_to_light);
-
-        if (isect.primitive->intersect(shadow)) {
-            continue;
+        Ray shadow(shadow_o, dir_to_light, dist_to_light);
+        Intersection isect_s;
+        if (isect.primitive->intersect(shadow, &isect_s)) {
+            // shadow
+            if (isect_s.t > dist_to_light) {
+              L_out += (cos_theta /  (num_light_samples * pr)) * f * light_L;
+            }
         } else {
-            L_out += (cos_theta / (num_light_samples * pr)) * f * light_L;
+            L_out += (cos_theta /  (num_light_samples * pr)) * f * light_L;
         }
       }
     }
   }
-
   return L_out;
+
 }
 
 
@@ -491,26 +494,28 @@ Spectrum PathTracer::raytrace_reflection(const Ray &r, Vector3D &hit_p, Vector3D
   // ### (Task 5) Compute an indirect lighting estimate using pathtracing with Monte Carlo.
   // Note that Ray objects have a depth field now; you should use this to avoid
   // traveling down one path forever.
-
   // Full ray depth exit
-  //if (r.depth > this->max_ray_depth) { return L_ref; }
+  if (r.depth > this->max_ray_depth) { Spectrum(); }
 
-  Vector3D w_ref = -r.d;
-  Spectrum L_ref = (0, 0, 0);
+  Vector3D w_in, w_out = -r.d;
+  Spectrum L_o = raytrace_incident(Ray(hit_p, w_out, (int)r.depth), hit_p, hit_n, isect);
+  
+  float pdf;
+  Spectrum f = isect.bsdf->sample_f(w_out, &w_in, &pdf); 
+  
+  double term_prob = 1. - clamp(f.illum(),0., 1.);
+  
+  if(cmu_rand() < term_prob){
+    return L_o;
+  } else {
+    Matrix3x3 o2w;
+    make_coord_space(o2w, isect.n);
+    w_in = (o2w * w_in).unit();
+    Ray new_ray = Ray(hit_p + EPS_D * w_in, w_in, (int)r.depth + 1);
 
-  for (int i = 0; i < this->max_ray_depth; i++) {
-    Vector3D w_in = Vector3D(0., 0., 0.);
-    float pdf = 0;
-    Spectrum f = isect.bsdf->sample_f(w_ref, &w_in, &pdf); 
-    int new_depth = r.depth + 1;
-    Spectrum L_in = raytrace_incident(Ray(hit_p, w_in, new_depth), hit_p, hit_n, isect);
-
-    L_ref += f * L_in * fabs(dot(w_in, hit_n)) * (1 / pdf);
+    return L_o + ((f * trace_ray(new_ray) * fabs(dot(w_in, hit_n))) * (1. / pdf * (1 - term_prob) ));
   }
-  L_ref *= (1. / (double)this->max_ray_depth);
-  //L_ref.print();
-  //getchar();
-  return L_ref;
+
 }
 
 

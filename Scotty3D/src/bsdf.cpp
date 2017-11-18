@@ -38,9 +38,7 @@ Spectrum DiffuseBSDF::f(const Vector3D& wo, const Vector3D& wi) {
 }
 
 Spectrum DiffuseBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) {
-  // get w_i vector
   *wi =  sampler.get_sample(pdf);
-  wi->normalize();
   return f(wo, *wi);
 }
 
