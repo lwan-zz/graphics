@@ -6,7 +6,7 @@
 
 #include <vector>
 
-#define N_BINS 30
+#define N_BINS 10
 
 namespace CMU462 {
 namespace StaticScene {

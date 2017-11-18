@@ -411,14 +411,7 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
   log_ray_hit(r, isect.t);
 #endif
 
-  Spectrum L_out = isect.bsdf->get_emission();  // Le
-
-  // TODO (PathTracer):
-  // Instead of initializing this value to a constant color, use the direct,
-  // indirect lighting components calculated in the code below. The starter
-  // code overwrites L_out by (.5,.5,.5) so that you can test your geometry
-  // queries before you implement path tracing.
-  //L_out = Spectrum(5.f, 5.f, 5.f);
+  Spectrum L_out = isect.bsdf->get_emission(); 
 
   Vector3D hit_p = r.o + r.d * isect.t;
   Vector3D hit_n = isect.n;
@@ -482,38 +475,31 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
     }
   }
 
-  /*
+
   // ### (Task 5) Compute an indirect lighting estimate using pathtracing with Monte Carlo.
   // Note that Ray objects have a depth field now; you should use this to avoid
   // traveling down one path forever.
-  while (r.depth <= this->max_ray_depth) {
-    r.depth++;
-    Vector3D w_in;
-    float* pdf;
 
+  // Full ray depth exit
+  if (r.depth > this->max_ray_depth) { return L_out; }
 
-    // generate sample
-    // http://15462.courses.cs.cmu.edu/fall2017/lecture/renderingequation/slide_050
-    // get f
-    // get Li
-    // add li using equation
+  // Sample incoming light vector
+  Vector3D w_in;
+  float pdf;
+  Spectrum f = isect.bsdf->sample_f(w_out, &w_in, &pdf);
 
-    // roll the die, see if you quit or not per the pdf
-    Spectrum sample_spectrum = isect.bsdf->sample_f(wo, wi, pdf);
+  // roll the die, see if you quit or not per the pdf, illum()
+  float term_prob = 1. - f.illum();
+  if (cmu_rand() < term_prob ) { return L_out; }
 
-  //if ()
+  // increment depth counter, create new in ray
+  Vector3D w_in_dir = w2o * w_in;
+  w_in_dir.normalize();
 
-  // (1) randomly select a new ray direction (it may be
-  // reflection or transmittence ray depending on
-  // surface type -- see BSDF::sample_f()
+  Ray in_ray(hit_p, w_in_dir, (int)r.depth + 1); 
+  Spectrum in_light = trace_ray(in_ray);
 
-  // (2) potentially terminate path (using Russian roulette)
-
-  // (3) evaluate weighted reflectance contribution due 
-  // to light from this direction
-  }
-  */
-  return L_out;
+  return L_out + (f * in_light * dot(w_in, isect.n)) * (1 / (pdf * (1 - term_prob)));
 }
 
 

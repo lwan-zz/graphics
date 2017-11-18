@@ -14,6 +14,11 @@ namespace CMU462 {
 
 // Helper math functions. Assume all vectors are in unit hemisphere //
 
+// simply return double random number between 0,1
+inline double cmu_rand() {
+    return (double)(std::rand()) / RAND_MAX;
+}
+
 inline double clamp(double n, double lower, double upper) {
   return std::max(lower, std::min(n, upper));
 }

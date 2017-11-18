@@ -65,9 +65,9 @@ bool Triangle::intersect(const Ray& r, Intersection* isect) const {
 
   // check direction of normals with 
   if (u > 0 && v > 0 && u < 1 && u + v < 1 && t < r.max_t && t > r.min_t) {
-    Vector3D normal = u * this->mesh->normals[this->v1] + 
-                      v * this->mesh->normals[this->v2] + 
-                      (1. - u - v) * this->mesh->normals[this->v3];
+    Vector3D normal = (1. - u - v) * this->mesh->normals[this->v1] + 
+                      u * this->mesh->normals[this->v2] + 
+                      v * this->mesh->normals[this->v3];
 
     if (dot(r.d, normal) < 0) { normal = -normal; }
     r.max_t = t;

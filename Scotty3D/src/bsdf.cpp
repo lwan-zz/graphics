@@ -33,21 +33,14 @@ void make_coord_space(Matrix3x3& o2w, const Vector3D& n) {
 }
 
 // Diffuse BSDF //
-
 Spectrum DiffuseBSDF::f(const Vector3D& wo, const Vector3D& wi) {
   return albedo * (1.0 / PI);
 }
 
 Spectrum DiffuseBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) {
-  // TODO (PathTracer):
-  // Implement DiffuseBSDF
-  // random sample using the CosineWeightedHemisphereSampler3D sampler
-  /*
-  CosineWeightedHemisphereSampler3D sampler;
-  *wo = sampler.get_sample(pdf);
-  Spectrum diffuse_sample = f(wo, wi);
-    */
-  return Spectrum();
+  // get w_i vector
+  *wi =  sampler.get_sample(pdf);
+  return f(wo, *wi);
 }
 
 // Mirror BSDF //
