@@ -24,7 +24,7 @@ using std::max;
 
 namespace CMU462 {
 
-//#define ENABLE_RAY_LOGGING 1
+#define ENABLE_RAY_LOGGING 1
 
 PathTracer::PathTracer(size_t ns_aa, size_t max_ray_depth, size_t ns_area_light,
                        size_t ns_diff, size_t ns_glsy, size_t ns_refr,
@@ -395,16 +395,9 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
   Spectrum L_out = Spectrum(0, 0, 0);
   Vector3D hit_p, hit_n;
   Intersection isect;
-  //cout << "newray" << endl;
+
   L_out += raytrace_incident(r, hit_p, hit_n, isect);
-  /*
-  Vector3D w_in = Vector3D(0., 0., 0.);
-  float pdf;
-  cout << "isect st"<< endl;
-  cout << isect.t<< endl;
-  cout << isect.bsdf-> is_delta() << endl;
-  isect.bsdf->sample_f(-r.d, &w_in, &pdf); 
-  */
+
   if (isect.t < INF_D) {
     L_out += raytrace_reflection(r, hit_p, hit_n, isect);
   }
@@ -509,7 +502,8 @@ Spectrum PathTracer::raytrace_reflection(const Ray &r, Vector3D &hit_p, Vector3D
     Vector3D w_in = Vector3D(0., 0., 0.);
     float pdf = 0;
     Spectrum f = isect.bsdf->sample_f(w_ref, &w_in, &pdf); 
-    Spectrum L_in = raytrace_incident(Ray(hit_p, w_in, r.depth++), hit_p, hit_n, isect);
+    int new_depth = r.depth + 1;
+    Spectrum L_in = raytrace_incident(Ray(hit_p, w_in, new_depth), hit_p, hit_n, isect);
 
     L_ref += f * L_in * fabs(dot(w_in, hit_n)) * (1 / pdf);
   }
