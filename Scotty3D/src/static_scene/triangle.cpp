@@ -57,7 +57,7 @@ bool Triangle::intersect(const Ray& r, Intersection* isect) const {
   double denom =  dot(e1xd, e2);
 
   // figure out if patch too small
-  if (abs(denom) < EPS_D) { return false;}
+  if (labs(denom) < EPS_D) { return false;}
 
   double u = -dot(sxe2, r.d) / denom;
   double v = dot(e1xd, s) / denom;

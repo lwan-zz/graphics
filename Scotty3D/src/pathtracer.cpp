@@ -24,7 +24,7 @@ using std::max;
 
 namespace CMU462 {
 
-//#define ENABLE_RAY_LOGGING 1
+#define ENABLE_RAY_LOGGING 1
 
 PathTracer::PathTracer(size_t ns_aa, size_t max_ray_depth, size_t ns_area_light,
                        size_t ns_diff, size_t ns_glsy, size_t ns_refr,
@@ -479,9 +479,12 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
   // ### (Task 5) Compute an indirect lighting estimate using pathtracing with Monte Carlo.
   // Note that Ray objects have a depth field now; you should use this to avoid
   // traveling down one path forever.
-
+  
   // Full ray depth exit
-  if (r.depth > this->max_ray_depth) { return L_out; }
+  if (r.depth > this->max_ray_depth) { 
+    //cout << "full ray depth" << endl;
+    return L_out; 
+  }
 
   // Sample incoming light vector
   Vector3D w_in;
@@ -489,17 +492,25 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
   Spectrum f = isect.bsdf->sample_f(w_out, &w_in, &pdf);
 
   // roll the die, see if you quit or not per the pdf, illum()
-  float term_prob = 1. - f.illum();
-  if (cmu_rand() < term_prob ) { return L_out; }
+  float term_prob = clamp(1. - f.illum(), 0, 1);
+  //cout << "Termination prob: " << term_prob << endl;
+  if (cmu_rand() < term_prob ) { 
+    //cout << "terminated" << endl;
+    return L_out; 
+  }
 
   // increment depth counter, create new in ray
-  Vector3D w_in_dir = w2o * w_in;
-  w_in_dir.normalize();
+  //Vector3D w_in_dir = o2w * w_in;
+  //w_in_dir.normalize();
 
-  Ray in_ray(hit_p, w_in_dir, (int)r.depth + 1); 
-  Spectrum in_light = trace_ray(in_ray);
+  Ray in_ray(hit_p, w_in, (int)r.depth + 1); 
+  //cout << "r depth: " << in_ray.depth << endl;
+  //Spectrum in_light = ;
+  Spectrum Li = trace_ray(in_ray);
 
-  return L_out + (f * in_light * dot(w_in, isect.n)) * (1 / (pdf * (1 - term_prob)));
+  //return L_out + f * Li * cos_theta(w_in) * (1 / pdf);
+  return L_out + f * Li * dot(w_in, isect.n)*  (1 / (pdf * (1 - term_prob)));
+  
 }
 
 
