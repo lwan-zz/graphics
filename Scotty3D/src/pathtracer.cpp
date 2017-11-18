@@ -392,8 +392,26 @@ void PathTracer::key_press(int key) {
 
 
 Spectrum PathTracer::trace_ray(const Ray &r) {
+  Spectrum L_out = Spectrum(0, 0, 0);
+  Vector3D hit_p, hit_n;
   Intersection isect;
+  //cout << "newray" << endl;
+  L_out += raytrace_incident(r, hit_p, hit_n, isect);
+  /*
+  Vector3D w_in = Vector3D(0., 0., 0.);
+  float pdf;
+  cout << "isect st"<< endl;
+  cout << isect.t<< endl;
+  cout << isect.bsdf-> is_delta() << endl;
+  isect.bsdf->sample_f(-r.d, &w_in, &pdf); 
+  */
+  if (isect.t < INF_D) {
+    L_out += raytrace_reflection(r, hit_p, hit_n, isect);
+  }
+  return L_out;
+}
 
+Spectrum PathTracer::raytrace_incident(const Ray &r, Vector3D &hit_p, Vector3D &hit_n, Intersection &isect) {
   if (!bvh->intersect(r, &isect)) {
 // log ray miss
 #ifdef ENABLE_RAY_LOGGING
@@ -410,12 +428,9 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
 #ifdef ENABLE_RAY_LOGGING
   log_ray_hit(r, isect.t);
 #endif
-
   Spectrum L_out = isect.bsdf->get_emission(); 
-
-  Vector3D hit_p = r.o + r.d * isect.t;
-  Vector3D hit_n = isect.n;
-
+  hit_p = r.o + r.d * isect.t;
+  hit_n = isect.n;
   // make a coordinate system for a hit point
   // with N aligned with the Z direction.
   Matrix3x3 o2w;
@@ -441,7 +456,7 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
 
       // integrate light over the hemisphere about the normal
       for (int i = 0; i < num_light_samples; i++) {
-
+        //cout << i << endl;
         // returns a vector 'dir_to_light' that is a direction from
         // point hit_p to the point on the light source.  It also returns
         // the distance from point x to this point on the light source.
@@ -475,31 +490,33 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
     }
   }
 
-  
+  return L_out;
+}
+
+
+Spectrum PathTracer::raytrace_reflection(const Ray &r, Vector3D &hit_p, Vector3D &hit_n, Intersection &isect) {
   // ### (Task 5) Compute an indirect lighting estimate using pathtracing with Monte Carlo.
   // Note that Ray objects have a depth field now; you should use this to avoid
   // traveling down one path forever.
 
   // Full ray depth exit
-  if (r.depth > this->max_ray_depth) { return L_out; }
+  //if (r.depth > this->max_ray_depth) { return L_ref; }
 
-  // Sample incoming light vector
-  Vector3D w_in;
-  float pdf;
-  Spectrum f = isect.bsdf->sample_f(w_out, &w_in, &pdf);
+  Vector3D w_ref = -r.d;
+  Spectrum L_ref = (0, 0, 0);
 
-  // roll the die, see if you quit or not per the pdf, illum()
-  float term_prob = 1. - f.illum();
-  if (cmu_rand() < term_prob ) { return L_out; }
+  for (int i = 0; i < this->max_ray_depth; i++) {
+    Vector3D w_in = Vector3D(0., 0., 0.);
+    float pdf = 0;
+    Spectrum f = isect.bsdf->sample_f(w_ref, &w_in, &pdf); 
+    Spectrum L_in = raytrace_incident(Ray(hit_p, w_in, r.depth++), hit_p, hit_n, isect);
 
-  // increment depth counter, create new in ray
-  Vector3D w_in_dir = w2o * w_in;
-  w_in_dir.normalize();
-
-  Ray in_ray(hit_p, w_in_dir, (int)r.depth + 1); 
-  Spectrum in_light = trace_ray(in_ray);
-
-  return L_out + (f * in_light * dot(w_in, isect.n)) * (1 / (pdf * (1 - term_prob)));
+    L_ref += f * L_in * fabs(dot(w_in, hit_n)) * (1 / pdf);
+  }
+  L_ref *= (1. / (double)this->max_ray_depth);
+  //L_ref.print();
+  //getchar();
+  return L_ref;
 }
 
 

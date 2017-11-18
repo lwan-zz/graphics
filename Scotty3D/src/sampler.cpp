@@ -38,6 +38,7 @@ Vector3D CosineWeightedHemisphereSampler3D::get_sample() const {
 }
 
 Vector3D CosineWeightedHemisphereSampler3D::get_sample(float *pdf) const {
+  
   double Xi1 = (double)(std::rand()) / RAND_MAX;
   double Xi2 = (double)(std::rand()) / RAND_MAX;
 
@@ -49,9 +50,23 @@ Vector3D CosineWeightedHemisphereSampler3D::get_sample(float *pdf) const {
   double y = sin(theta) * sin(phi);
   double z = cos(phi);
 
-  *pdf = z / PI;
+  *pdf = cos(phi) / PI;
 
   return Vector3D(x, y, z);
+ /* 
+  double Xi1 = (double)(std::rand()) / RAND_MAX;
+  double Xi2 = (double)(std::rand()) / RAND_MAX;
+
+  double r = sqrt(Xi1);
+  double theta = 2 * PI * Xi2;
+
+  double x = r * cos(theta);
+  double y = r * sin(theta);
+
+  * pdf = cos(theta) / PI;
+  return Vector3D(x, y, sqrt(std::max(0., 1 - Xi1)));
+  */
 }
+
 
 }  // namespace CMU462
