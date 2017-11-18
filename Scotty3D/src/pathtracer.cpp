@@ -475,7 +475,7 @@ Spectrum PathTracer::trace_ray(const Ray &r) {
     }
   }
 
-
+  
   // ### (Task 5) Compute an indirect lighting estimate using pathtracing with Monte Carlo.
   // Note that Ray objects have a depth field now; you should use this to avoid
   // traveling down one path forever.
