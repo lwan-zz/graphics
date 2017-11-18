@@ -2,6 +2,10 @@
 build/
 release/
 debug/
+
+# Big files
+media/pathtracer/exr
+
 # Useless files
 .DS_STORE
 *.swp
