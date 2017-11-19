@@ -482,7 +482,7 @@ Spectrum PathTracer::raytrace_incident(const Ray &r, Vector3D &hit_p, Vector3D &
             }
         } 
         // my scene is weirdly dark / bright, so I just did a bad thing below
-        L_out += (cos_theta /  (num_light_samples / 2. * pr)) * f * light_L;
+        L_out += (cos_theta /  (num_light_samples / 3. * pr)) * f * light_L;
       }
     }
   }
