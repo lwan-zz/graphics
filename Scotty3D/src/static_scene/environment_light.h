@@ -45,6 +45,7 @@ class EnvironmentLight : public SceneLight {
 
  private:
   const HDRImageBuffer* envMap;
+  UniformHemisphereSampler3D sampler;
 };  // class EnvironmentLight
 
 }  // namespace StaticScene

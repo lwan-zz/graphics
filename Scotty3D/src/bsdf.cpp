@@ -38,9 +38,7 @@ Spectrum DiffuseBSDF::f(const Vector3D& wo, const Vector3D& wi) {
 }
 
 Spectrum DiffuseBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) {
-  // get w_i vector
   *wi =  sampler.get_sample(pdf);
-  wi->normalize();
   return f(wo, *wi);
 }
 
@@ -96,12 +94,7 @@ Spectrum GlassBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) {
   // TODO (PathTracer):
   // Compute Fresnel coefficient and either reflect or refract based on it.
 
-  *pdf = 1;
-  // if not refract, then have to reflect
-  if (!refract(wo, wi, ior)) {
-    reflect(wo, wi);
-    return reflectance * (1.f / fabs(cos_theta(wo)));
-  }
+  *pdf = 1; // constant pdf?
 
   // switch to i,t notation
   double ior_i, ior_t;
@@ -118,16 +111,15 @@ Spectrum GlassBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) {
 
   double r_parallel = ((ior_t * cos_i) - (ior_i * cos_t)) / ((ior_t * cos_i) + (ior_i * cos_t));
   double r_perp = ((ior_i * cos_i) - (ior_t * cos_t)) / ((ior_i * cos_i) + (ior_t * cos_t));
-
   double fresnel = 0.5 * (pow(r_parallel, 2) + pow(r_perp, 2));
+  fresnel = clamp(fresnel, 0., 1.);
 
-  // rng, see if it's less than fresnel ? reflect
-  if (cmu_rand() < fresnel) {
+  if (cmu_rand() > fresnel) {
     reflect(wo, wi);
-    return reflectance * (1. / fabs(cos_i));
+    return reflectance * (1.f / fabs(cos_theta(wo)));
   } else {
-    double df = (pow(ior_t, 2) / pow(ior_i, 2)) * (1. - fresnel) / fabs(cos_i);
-    return transmittance * df;
+  double df = (pow(ior_t, 2) / pow(ior_i, 2)) * (1. - fresnel) / fabs(cos_i);
+  return transmittance * df;
   }
 
 }
