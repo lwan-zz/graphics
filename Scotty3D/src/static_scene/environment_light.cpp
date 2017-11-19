@@ -31,7 +31,7 @@ Spectrum EnvironmentLight::sample_L(const Vector3D& p, Vector3D* wi,
   int x_idx = (int) tex_x;
   int y_idx = (int) tex_y;
 
-  // TODO deal with edges
+  // TODO deal with edges... later
   Spectrum px1, px2, px3, px4;
 
   px1 = envMap->data[(y_idx)     * w + x_idx   ];
