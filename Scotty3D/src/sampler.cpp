@@ -43,17 +43,17 @@ Vector3D CosineWeightedHemisphereSampler3D::get_sample(float *pdf) const {
   double Xi2 = (double)(std::rand()) / RAND_MAX;
 
   // spherical
-  double theta = acos(sqrt(Xi1));
+  double theta = asinf(sqrt(Xi1));
   double phi = 2.0 * PI * Xi2;
   // convert to cartesian
-  double x = sin(phi) * cos(theta);
-  double y = sin(theta) * sin(phi);
-  double z = cos(phi);
+  double x = sinf(theta) * cosf(phi);
+  double y = sinf(theta) * sinf(phi);
+  double z = cosf(theta);
 
-  *pdf = cos(phi) / PI;
+  *pdf = cosf(theta) / PI;
 
   return Vector3D(x, y, z);
-  
+
 }
 
 

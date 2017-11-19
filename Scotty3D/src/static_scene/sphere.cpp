@@ -28,6 +28,7 @@ bool Sphere::intersect(const Ray& r, Intersection* isect) const {
   // Note again that you might want to use the the Sphere::test helper here.
   // When an intersection takes place, the Intersection data should be updated
   // correspondingly.
+  // help from here: https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
   Vector3D L  = this->o - r.o;
   double tca = dot(L, r.d);
 

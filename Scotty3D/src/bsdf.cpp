@@ -119,14 +119,9 @@ Spectrum GlassBSDF::sample_f(const Vector3D& wo, Vector3D* wi, float* pdf) {
 
   double fresnel = 0.5 * (pow(r_parallel, 2) + pow(r_perp, 2));
 
-  // rng, see if it's less than fresnel ? reflect
-  if (cmu_rand() < fresnel) {
-    reflect(wo, wi);
-    return reflectance * (1. / fabs(cos_i));
-  } else {
-    double df = (pow(ior_t, 2) / pow(ior_i, 2)) * (1. - fresnel) / fabs(cos_i);
-    return transmittance * df;
-  }
+  double df = (pow(ior_t, 2) / pow(ior_i, 2)) * (1. - fresnel) / fabs(cos_i);
+  return transmittance * df;
+
 
 }
 
