@@ -392,41 +392,37 @@ void PathTracer::key_press(int key) {
 
 
 Spectrum PathTracer::trace_ray(const Ray &r) {
-  Spectrum L_out = Spectrum(0, 0, 0);
-  Vector3D hit_p, hit_n;
   Intersection isect;
 
-  L_out += raytrace_incident(r, hit_p, hit_n, isect);
-
-  if (isect.t < INF_D) {
-    L_out += raytrace_reflection(r, hit_p, hit_n, isect);
-  }
-  return L_out;
-}
-
-Spectrum PathTracer::raytrace_incident(const Ray &r, Vector3D &hit_p, Vector3D &hit_n, Intersection &isect) {
-  if (r.depth > max_ray_depth) { return Spectrum(); }
   if (!bvh->intersect(r, &isect)) {
 // log ray miss
 #ifdef ENABLE_RAY_LOGGING
     log_ray_miss(r);
 #endif
+
+    // TODO (PathTracer):
     // (Task 7) If you have an environment map, return the Spectrum this ray
     // samples from the environment map. If you don't return black.
-    if (envLight) {
-      return envLight->sample_dir(r);
-    } else {
-      return Spectrum();
-    }
+    return Spectrum(0, 0, 0);
   }
 
 // log ray hit
 #ifdef ENABLE_RAY_LOGGING
   log_ray_hit(r, isect.t);
 #endif
-  Spectrum L_out = isect.bsdf->get_emission(); 
-  hit_p = r.o + r.d * isect.t;
-  hit_n = isect.n;
+
+  Spectrum L_out = isect.bsdf->get_emission();  // Le
+
+  // TODO (PathTracer):
+  // Instead of initializing this value to a constant color, use the direct,
+  // indirect lighting components calculated in the code below. The starter
+  // code overwrites L_out by (.5,.5,.5) so that you can test your geometry
+  // queries before you implement path tracing.
+  //L_out = Spectrum(5.f, 5.f, 5.f);
+
+  Vector3D hit_p = r.o + r.d * isect.t;
+  Vector3D hit_n = isect.n;
+
   // make a coordinate system for a hit point
   // with N aligned with the Z direction.
   Matrix3x3 o2w;
@@ -437,6 +433,7 @@ Spectrum PathTracer::raytrace_incident(const Ray &r, Vector3D &hit_p, Vector3D &
   // toward the camera if this is a primary ray)
   Vector3D w_out = w2o * (r.o - hit_p);
   w_out.normalize();
+
 
   if (!isect.bsdf->is_delta()) {
     Vector3D dir_to_light;
@@ -451,6 +448,7 @@ Spectrum PathTracer::raytrace_incident(const Ray &r, Vector3D &hit_p, Vector3D &
 
       // integrate light over the hemisphere about the normal
       for (int i = 0; i < num_light_samples; i++) {
+
         // returns a vector 'dir_to_light' that is a direction from
         // point hit_p to the point on the light source.  It also returns
         // the distance from point x to this point on the light source.
@@ -473,52 +471,49 @@ Spectrum PathTracer::raytrace_incident(const Ray &r, Vector3D &hit_p, Vector3D &
         // (Task 4) Construct a shadow ray and compute whether the intersected surface is
         // in shadow. Only accumulate light if not in shadow.
         Vector3D shadow_o = hit_p  + EPS_D * dir_to_light;
-        Ray shadow(shadow_o, dir_to_light, dist_to_light);
-        Intersection isect_s;
-        if (bvh->intersect(shadow, &isect_s)) {
-            // shadow
-            if (isect_s.t < dist_to_light) {
-              continue;
-            }
-        } 
-        // my scene is weirdly dark / bright, so I just did a bad thing below
-        L_out += (cos_theta /  (num_light_samples * pr)) * f * light_L;
+        Ray shadow(shadow_o, dir_to_light);
+
+        if (isect.primitive->intersect(shadow)) {
+            continue;
+        } else {
+            L_out += (cos_theta / (num_light_samples * pr)) * f * light_L;
+        }
       }
     }
   }
-  return L_out;
 
-}
-
-
-Spectrum PathTracer::raytrace_reflection(const Ray &r, Vector3D &hit_p, Vector3D &hit_n, Intersection &isect) {
+  /*
   // ### (Task 5) Compute an indirect lighting estimate using pathtracing with Monte Carlo.
   // Note that Ray objects have a depth field now; you should use this to avoid
   // traveling down one path forever.
-  // Full ray depth exit
-  
-  if (r.depth > this->max_ray_depth) { return Spectrum(); }
+  while (r.depth <= this->max_ray_depth) {
+    r.depth++;
+    Vector3D w_in;
+    float* pdf;
 
-  Vector3D w_in, w_out = -r.d;
-  Spectrum L_o = raytrace_incident(Ray(hit_p, w_out), hit_p, hit_n, isect);
-  
-  float pdf;
-  Spectrum f = isect.bsdf->sample_f(w_out, &w_in, &pdf); 
-  
-  double term_prob = 1. - clamp(f.illum(),0., 1.);
-  
-  if(cmu_rand() < term_prob){
-    return L_o;
-  } else {
-    Matrix3x3 o2w;
-    make_coord_space(o2w, isect.n);
-    w_in = (o2w * w_in).unit();
-    int depth = r.depth + 1;
-    Ray new_ray = Ray(hit_p + EPS_D * w_in, w_in, depth);
 
-    return L_o + ((f * raytrace_reflection(new_ray, hit_p, hit_n, isect) * fabs(dot(w_in, hit_n))) * (1. / pdf * (1 - term_prob) ));
+    // generate sample
+    // http://15462.courses.cs.cmu.edu/fall2017/lecture/renderingequation/slide_050
+    // get f
+    // get Li
+    // add li using equation
+
+    // roll the die, see if you quit or not per the pdf
+    Spectrum sample_spectrum = isect.bsdf->sample_f(wo, wi, pdf);
+
+  //if ()
+
+  // (1) randomly select a new ray direction (it may be
+  // reflection or transmittence ray depending on
+  // surface type -- see BSDF::sample_f()
+
+  // (2) potentially terminate path (using Russian roulette)
+
+  // (3) evaluate weighted reflectance contribution due 
+  // to light from this direction
   }
-
+  */
+  return L_out;
 }
 
 
