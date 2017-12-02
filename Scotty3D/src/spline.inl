@@ -58,49 +58,56 @@ inline T Spline<T>::evaluate(double time, int derivative) {
     return T(); 
   }
 
-  KnotIter firstKnotIt = knots.begin();
-  KnotIter lastKnotIt = prev(knots.end());
+  KnotCIter firstKnotIt = knots.begin();
+  KnotCIter lastKnotIt = prev(knots.end());
 
   if (knots.size() == 1) { // 1 knot
     //cout << "oneknot" << endl;
-    if (derivative > 0) { 
-      return T(); 
-    } else { 
+    if (derivative == 0) { 
       return firstKnotIt->second; 
+    } else { 
+      return T(); 
     }
   }
   
   // handle if query time is lower than first or greater than last
   if (time <= firstKnotIt->first) {
     //cout << "early" << endl;
-    if (derivative > 0) { 
-      return T(); 
-    } else { 
+    if (derivative == 0) { 
       return firstKnotIt->second; 
+    } else { 
+      return T(); 
     }
   } else if (time >= lastKnotIt->first) {
     //cout << "late" << endl;
-    if (derivative > 0) { 
-      return T(); 
-    } else { 
+    if (derivative == 0) { 
       return lastKnotIt->second; 
+    } else { 
+      return T(); 
     }
   }
 
-
-  //cout << "more than 2" << endl;
   // containers for knots, slopes
   pair<double, T> k0, k1, k2, k3;
   T m1, m2;
 
-  KnotIter k1_it = knots.lower_bound(time);
-  KnotIter k2_it = next(knots.lower_bound(time));
+  //cout << "num knots: " << knots.size() << endl;
+  KnotIter k1_it = prev(knots.upper_bound(time));
+  KnotIter k2_it = knots.upper_bound(time);
+  
 
   k1 = *k1_it;
   k2 = *k2_it;
 
-  if (k1_it == knots.begin()) {
+  //cout << "k1: " << k1.first << endl;
+  //k1.second.print();
+  //cout << "k2: " << k2.first << endl;
+  //k2.second.print();
+
+
+  if (k1_it == firstKnotIt) {
     // make virtual knot
+    //cout << "make k0" << endl;
     k0.first = k1.first - (k2.first - k1.first);
     k0.second = k1.second - (k2.second - k1.second);
   } else {
@@ -108,9 +115,8 @@ inline T Spline<T>::evaluate(double time, int derivative) {
     k0.second = prev(k1_it)->second;
   }
 
-  if (knots.upper_bound(time) == prev(knots.end())) {
-    // make virtual knot
-    //cout << "making k3" << endl;
+  if (k2_it == lastKnotIt) {
+    //cout << "make k3" << endl;
     k3.first = k2.first + (k2.first - k1.first);
     k3.second = k2.second + (k2.second - k1.second);
   } else {
@@ -120,6 +126,12 @@ inline T Spline<T>::evaluate(double time, int derivative) {
   
   m1 = (k2.first - k1.first) * (k2.second - k0.second) / (k2.first - k0.first);
   m2 = (k2.first - k1.first) * (k3.second - k1.second) / (k3.first - k1.first);
+
+  if (k2.first - k0.first < EPS_D || k3.first - k1.first < EPS_D) {
+    cout << "big huge derivative" << endl;
+    cout << k0.first << " " << k1.first << " " << k2.first << " " << k3.first << endl;
+    getchar();
+  }
 
   // normalize time
   double norm_time = (time - k1.first) / (k2.first - k1.first);
@@ -135,6 +147,9 @@ inline T Spline<T>::evaluate(double time, int derivative) {
     output = cubicSplineUnitInterval(k1.second, k2.second, m1, m2, norm_time, derivative) /
              (pow((k2.first - k1.first), 2));
   } else {
+    
+    cout << "weird deriv" << endl;
+    getchar();
     output = T();
   }
 
