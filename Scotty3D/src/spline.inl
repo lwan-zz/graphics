@@ -33,16 +33,15 @@ inline T Spline<T>::cubicSplineUnitInterval(
     h01 = -12 * time + 6;
     h11 = 6 * time - 2;
   } else {
-    cout << "derivative not supported" << endl;
-    exit(1);
+    return T();
   }
 
-  /*
-  cout << h00 << endl;
-  cout << h10 << endl;
-  cout << h01 << endl;
-  cout << h11 << endl;
-  */
+  
+  //cout << h00 << endl;
+  //cout << h10 << endl;
+  //cout << h01 << endl;
+  //cout << h11 << endl;
+  
 
   T output = h00 * position0 + h10 * tangent0 + h01 * position1 + h11 * tangent1;
   //cout << "----/cubicSplineUnitInterval------" << endl;
@@ -53,102 +52,91 @@ inline T Spline<T>::cubicSplineUnitInterval(
 // given time.
 template <class T>
 inline T Spline<T>::evaluate(double time, int derivative) {
-  // TODO (Animation) Task 1b
 
   // Handle some edge cases specified in wiki
   if (knots.size() < 1) { // no knots
     return T(); 
-  } else if (knots.size() == 1) { // 1 knot
-    if (derivative > 0) { return T(); }
-    else { return knots.begin()->second; }
+  }
+
+  KnotIter firstKnotIt = knots.begin();
+  KnotIter lastKnotIt = prev(knots.end());
+
+  if (knots.size() == 1) { // 1 knot
+    //cout << "oneknot" << endl;
+    if (derivative > 0) { 
+      return T(); 
+    } else { 
+      return firstKnotIt->second; 
+    }
   }
   
   // handle if query time is lower than first or greater than last
-  if (time < knots.begin()->first) {
-    //cout << "time < knots begin" << endl;
-    //cout << "first knot: " << knots.begin()->first << endl;
+  if (time <= firstKnotIt->first) {
+    //cout << "early" << endl;
     if (derivative > 0) { 
       return T(); 
     } else { 
-      return knots.begin()->second; 
+      return firstKnotIt->second; 
     }
-  } else if (time > (--knots.end())->first) {
-    //cout << "time > knots end" << endl;
-    //cout << "last knot: " << (--knots.end())->first << endl;
+  } else if (time >= lastKnotIt->first) {
+    //cout << "late" << endl;
     if (derivative > 0) { 
       return T(); 
     } else { 
-      return knots.end()->second; 
+      return lastKnotIt->second; 
     }
   }
 
-  // normalize time
-  double norm_time = (time - knots.begin()->first) / ((--knots.end())->first - knots.begin()->first);
-  //cout << "time: " << time << endl;
-  //cout << "norm_time: " << norm_time << endl;
-  //cout << "num knots: " << knots.size() << endl;
 
-  // temporary containers for knots, slopes
+  //cout << "more than 2" << endl;
+  // containers for knots, slopes
   pair<double, T> k0, k1, k2, k3;
   T m1, m2;
 
-  // print knots
-  /*
-  cout << "all knots" << endl;
-  for (KnotIter ki = knots.begin(); ki != knots.end(); ki++) {
-    //cout << "t: " << ki->first << endl;
-    ki->second.print();
-  }
-  */
-  
-  k1 = *(knots.lower_bound(time));
-  k2 = *(knots.upper_bound(time));
+  KnotIter k1_it = knots.lower_bound(time);
+  KnotIter k2_it = next(knots.lower_bound(time));
 
-  //cout << "knot points" << endl;
-  if (abs(knots.lower_bound(time)->first - knots.begin()->first) < EPS_D) {
+  k1 = *k1_it;
+  k2 = *k2_it;
+
+  if (k1_it == knots.begin()) {
     // make virtual knot
-    //cout << "making k0" << endl;
     k0.first = k1.first - (k2.first - k1.first);
     k0.second = k1.second - (k2.second - k1.second);
+  } else {
+    k0.first = prev(k1_it)->first;
+    k0.second = prev(k1_it)->second;
   }
 
-  if (abs(knots.upper_bound(time)->first - (--knots.end())->first) < EPS_D) {
+  if (knots.upper_bound(time) == prev(knots.end())) {
     // make virtual knot
     //cout << "making k3" << endl;
     k3.first = k2.first + (k2.first - k1.first);
     k3.second = k2.second + (k2.second - k1.second);
+  } else {
+    k3.first = next(k2_it)->first;
+    k3.second = next(k2_it)->second;
   }
   
-  /*
-  k0.second.print();
-  k1.second.print();
-  k2.second.print();
-  k3.second.print();  
-  */
-  
-  //cout << "tangents" << endl;
-  
-  m1 = (k2.second - k0.second) / (k2.first - k0.first);
-  m2 = (k3.second - k1.second) / (k3.first - k1.first);
+  m1 = (k2.first - k1.first) * (k2.second - k0.second) / (k2.first - k0.first);
+  m2 = (k2.first - k1.first) * (k3.second - k1.second) / (k3.first - k1.first);
 
-  if (k2.first - k0.first < EPS_D) {
-    m1 = Vector3D();
-  }
-  if (k3.first - k1.first < EPS_D) {
-    m2 = Vector3D();
-  }
-  
-  //m1.print();
-  //m2.print();
+  // normalize time
+  double norm_time = (time - k1.first) / (k2.first - k1.first);
 
-  T output = cubicSplineUnitInterval(k1.second, k2.second, m1, m2, norm_time, derivative);
-  
-  /*
-  cout << "output" << endl;
-  output.print();
-  cout << "--------" << endl;
-  getchar();
-  */
+  T output;
+
+  if (derivative == 0) {
+    output = cubicSplineUnitInterval(k1.second, k2.second, m1, m2, norm_time, derivative);
+  } else if (derivative == 1) {
+    output = cubicSplineUnitInterval(k1.second, k2.second, m1, m2, norm_time, derivative) / 
+             (k2.first - k1.first);
+  } else if (derivative == 2) {
+    output = cubicSplineUnitInterval(k1.second, k2.second, m1, m2, norm_time, derivative) /
+             (pow((k2.first - k1.first), 2));
+  } else {
+    output = T();
+  }
 
   return output;
 }
