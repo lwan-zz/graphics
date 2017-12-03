@@ -86,6 +86,16 @@ class Matrix4x4 {
         Vector4D& column( int i );
   const Vector4D& column( int i ) const;
 
+
+
+  inline void print() {
+    for (int col = 0; col != 4; col++) {
+        for (int row = 0; row != 4; row++) {
+            std::cout << (*this)(row, col) << " ";
+        }
+        std::cout << std::endl;
+    }
+  }
   /**
    * Returns the transpose of A.
    */

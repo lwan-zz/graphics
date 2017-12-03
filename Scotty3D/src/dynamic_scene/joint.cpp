@@ -143,6 +143,13 @@ Matrix4x4 Joint::getTransformation() {
   */
 
   Matrix4x4 T = Matrix4x4::identity();
+
+  for (Joint* j = parent; j != nullptr; j = j->parent) {
+    T = Matrix4x4::translation(j->axis) * j->getRotation() * T;
+  }
+  
+  T = skeleton->mesh->getTransformation() * T;
+
   return T;
 }
 
@@ -164,8 +171,10 @@ Vector3D Joint::getBasePosInWorld() {
   utilize the transformation returned by Joint::getTransform() to compute the
   base position in world coordinate frame.
   */
-
-  return Vector3D();
+  Vector4D pos(position, 1);
+  Matrix4x4 basetransform = getTransformation();
+  pos = basetransform * pos;
+  return pos.to3D();
 }
 
 Vector3D Joint::getEndPosInWorld() {
@@ -175,7 +184,11 @@ Vector3D Joint::getEndPosInWorld() {
   position in world coordinate frame.
   */
 
-  return Vector3D();
+  Vector4D pos(getBasePosInWorld(), 1);
+  Matrix4x4 trans = Matrix4x4::translation(axis);
+
+  return (trans * pos).to3D();
+
 }
 }  // namespace DynamicScene
 }  // namespace CMU462

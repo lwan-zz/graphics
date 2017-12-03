@@ -130,7 +130,6 @@ inline T Spline<T>::evaluate(double time, int derivative) {
   if (k2.first - k0.first < EPS_D || k3.first - k1.first < EPS_D) {
     cout << "big huge derivative" << endl;
     cout << k0.first << " " << k1.first << " " << k2.first << " " << k3.first << endl;
-    getchar();
   }
 
   // normalize time
@@ -147,9 +146,7 @@ inline T Spline<T>::evaluate(double time, int derivative) {
     output = cubicSplineUnitInterval(k1.second, k2.second, m1, m2, norm_time, derivative) /
              (pow((k2.first - k1.first), 2));
   } else {
-    
     cout << "weird deriv" << endl;
-    getchar();
     output = T();
   }
 
