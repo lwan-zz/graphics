@@ -47,10 +47,52 @@ Mesh::Mesh(Collada::PolymeshInfo &polyMesh, const Matrix4x4 &transform) {
 
 void Mesh::linearBlendSkinning(bool useCapsuleRadius) {
   // TODO (Animation) Task 3a, Task 3b
+
+  for (VertexIter vertex_it = mesh.verticesBegin(); vertex_it != mesh.verticesEnd(); vertex_it++) {
+    Vector4D pos(vertex_it->bindPosition, 1.);
+    vector<LBSInfo> joints_lbs(skeleton->joints.size());
+    int joint_no = 0;
+
+    double inv_sum_weight = 0.;
+    for (auto joint_it : skeleton->joints) {
+      Matrix4x4 trans = joint_it->getTransformation();
+
+      // get point on line, then find euclidean dist
+      Vector3D trans_pos = (trans * pos).to3D();
+      Vector3D vec_v = trans_pos - joint_it->position;
+      double len = dot(vec_v, joint_it->axis);
+  
+      Vector3D point = joint_it->position + joint_it->axis * len;
+
+      double dist = (point - trans_pos).norm();
+
+
+      LBSInfo joint_lbs;
+      joint_lbs.blendPos = trans_pos;
+      joint_lbs.distance = dist;
+
+      joints_lbs[joint_no] = joint_lbs;
+
+      inv_sum_weight += 1. / dist;
+      ++joint_no;
+    }
+
+    // sum joints
+    Vector3D newpos;
+    for (auto lbs : joints_lbs) {
+      newpos += lbs.blendPos * ((1. / lbs.distance) / inv_sum_weight);
+    }
+
+    vertex_it->position = newpos;
+    //cout << newpos << endl;
+  }
+
 }
 
 void Mesh::forward_euler(float timestep, float damping_factor) {
   // TODO (Animation) Task 4
+
+
 }
 
 void Mesh::symplectic_euler(float timestep, float damping_factor) {
@@ -786,4 +828,11 @@ StaticScene::SceneObject *Mesh::get_transformed_static_object(double t) {
 }
 
 }  // namespace DynamicScene
+
+/*
+long distVecToPoint(Vector3D &point, Vector3D &o, Vector3D &d) {
+  return dist = dot(point - o, d.unit());
+}
+*/
+
 }  // namespace CMU462

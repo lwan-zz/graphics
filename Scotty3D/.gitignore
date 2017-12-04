@@ -2,6 +2,7 @@
 build/
 release/
 debug/
+.vscode/
 
 # Big files
 media/pathtracer/exr

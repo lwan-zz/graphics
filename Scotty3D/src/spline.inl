@@ -36,13 +36,6 @@ inline T Spline<T>::cubicSplineUnitInterval(
     return T();
   }
 
-  
-  //cout << h00 << endl;
-  //cout << h10 << endl;
-  //cout << h01 << endl;
-  //cout << h11 << endl;
-  
-
   T output = h00 * position0 + h10 * tangent0 + h01 * position1 + h11 * tangent1;
   //cout << "----/cubicSplineUnitInterval------" << endl;
   return output;
