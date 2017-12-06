@@ -47,13 +47,15 @@ Mesh::Mesh(Collada::PolymeshInfo &polyMesh, const Matrix4x4 &transform) {
 
 void Mesh::linearBlendSkinning(bool useCapsuleRadius) {
   // TODO (Animation) Task 3a, Task 3b
+  //cout << "UseCapsuleRadius: " << useCapsuleRadius << endl;
   for (VertexIter vertex_it = mesh.verticesBegin(); vertex_it != mesh.verticesEnd(); vertex_it++) {
     Vector4D pos(vertex_it->bindPosition, 1.);
     vector<LBSInfo> joints_lbs; 
     double inv_sum_weight = 0.;
-    
+    //cout << "newvertex" << endl;
     for (auto joint_it : skeleton->joints) {
       Matrix4x4 trans = joint_it->getTransformation();
+      //cout << "CapsuleRadius: " << joint_it->capsuleRadius << endl;
 
       // get point on line, then find euclidean dist
       Vector3D trans_pos = (trans * pos).to3D();
@@ -62,24 +64,37 @@ void Mesh::linearBlendSkinning(bool useCapsuleRadius) {
       Vector3D point = joint_it->position + joint_it->axis * len;
       double dist = (point - trans_pos).norm();
 
-      if (useCapsuleRadius && (joint_it->capsuleRadius > dist)) {
-        inv_sum_weight += 1. / dist;
-        
-        // populate lbsinfo
-        LBSInfo joint_lbs;
-        joint_lbs.blendPos = trans_pos;
-        joint_lbs.distance = dist;
-        joints_lbs.push_back(joint_lbs);
+      //cout << "dist: " << dist <<  endl;
+      //trans_pos.print();
+      //vertex_it->position.print();
+      if (useCapsuleRadius) {
+        if (joint_it->capsuleRadius < dist) {
+          continue;
+        }
       }
+      
+      inv_sum_weight += 1. / dist;
+      
+      // populate lbsinfo
+      LBSInfo joint_lbs;
+      joint_lbs.blendPos = trans_pos;
+      joint_lbs.distance = dist;
+      joints_lbs.push_back(joint_lbs);
+      
     }
 
+    
     // sum joints
-    Vector3D newpos;
-    for (auto lbs : joints_lbs) {
-      newpos += lbs.blendPos * (1. / (inv_sum_weight * lbs.distance)) ;
+    if (joints_lbs.size() > 0) {
+      //cout << "in capsule radius" << endl;
+      Vector3D newpos;
+      for (auto lbs : joints_lbs) {
+        newpos += lbs.blendPos * (1. / (inv_sum_weight * lbs.distance)) ;
+      }      
+      vertex_it->position = newpos;
     }
-
-    vertex_it->position = newpos;
+    //vertex_it->position.print();
+    //getchar();
   }
 
 }

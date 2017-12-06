@@ -109,6 +109,9 @@ inline T Spline<T>::evaluate(double time, int derivative) {
     k3.second = next(k2_it)->second;
   }
   
+    // normalize time
+  double norm_time = (time - k1.first) / (k2.first - k1.first);
+  
   m1 = (k2.first - k1.first) * (k2.second - k0.second) / (k2.first - k0.first);
   m2 = (k2.first - k1.first) * (k3.second - k1.second) / (k3.first - k1.first);
 
@@ -117,8 +120,7 @@ inline T Spline<T>::evaluate(double time, int derivative) {
     cout << k0.first << " " << k1.first << " " << k2.first << " " << k3.first << endl;
   }
 
-  // normalize time
-  double norm_time = (time - k1.first) / (k2.first - k1.first);
+
 
   T output;
 
