@@ -84,19 +84,11 @@ inline T Spline<T>::evaluate(double time, int derivative) {
   pair<double, T> k0, k1, k2, k3;
   T m1, m2;
 
-  //cout << "num knots: " << knots.size() << endl;
   KnotIter k1_it = prev(knots.upper_bound(time));
   KnotIter k2_it = knots.upper_bound(time);
-  
 
   k1 = *k1_it;
   k2 = *k2_it;
-
-  //cout << "k1: " << k1.first << endl;
-  //k1.second.print();
-  //cout << "k2: " << k2.first << endl;
-  //k2.second.print();
-
 
   if (k1_it == firstKnotIt) {
     // make virtual knot

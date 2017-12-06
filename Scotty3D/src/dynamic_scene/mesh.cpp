@@ -47,13 +47,11 @@ Mesh::Mesh(Collada::PolymeshInfo &polyMesh, const Matrix4x4 &transform) {
 
 void Mesh::linearBlendSkinning(bool useCapsuleRadius) {
   // TODO (Animation) Task 3a, Task 3b
-
   for (VertexIter vertex_it = mesh.verticesBegin(); vertex_it != mesh.verticesEnd(); vertex_it++) {
     Vector4D pos(vertex_it->bindPosition, 1.);
-    vector<LBSInfo> joints_lbs(skeleton->joints.size());
-    int joint_no = 0;
-
+    vector<LBSInfo> joints_lbs; 
     double inv_sum_weight = 0.;
+    
     for (auto joint_it : skeleton->joints) {
       Matrix4x4 trans = joint_it->getTransformation();
 
@@ -64,19 +62,15 @@ void Mesh::linearBlendSkinning(bool useCapsuleRadius) {
       Vector3D point = joint_it->position + joint_it->axis * len;
       double dist = (point - trans_pos).norm();
 
-      // breaks things
-      /*if (useCapsuleRadius && (joint_it->capsuleRadius < dist)) {
-        trans_pos = Vector3D();
-      }*/
-
-      // populate lbsinfo
-      LBSInfo joint_lbs;
-      joint_lbs.blendPos = trans_pos;
-      joint_lbs.distance = dist;
-      joints_lbs[joint_no] = joint_lbs;
-
-      inv_sum_weight += 1. / dist;
-      ++joint_no;
+      if (useCapsuleRadius && (joint_it->capsuleRadius > dist)) {
+        inv_sum_weight += 1. / dist;
+        
+        // populate lbsinfo
+        LBSInfo joint_lbs;
+        joint_lbs.blendPos = trans_pos;
+        joint_lbs.distance = dist;
+        joints_lbs.push_back(joint_lbs);
+      }
     }
 
     // sum joints
@@ -86,7 +80,6 @@ void Mesh::linearBlendSkinning(bool useCapsuleRadius) {
     }
 
     vertex_it->position = newpos;
-    //cout << newpos << endl;
   }
 
 }
