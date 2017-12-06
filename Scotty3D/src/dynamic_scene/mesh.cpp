@@ -61,16 +61,18 @@ void Mesh::linearBlendSkinning(bool useCapsuleRadius) {
       Vector3D trans_pos = (trans * pos).to3D();
       Vector3D vec_v = trans_pos - joint_it->position;
       double len = dot(vec_v, joint_it->axis);
-  
       Vector3D point = joint_it->position + joint_it->axis * len;
-
       double dist = (point - trans_pos).norm();
 
+      // breaks things
+      /*if (useCapsuleRadius && (joint_it->capsuleRadius < dist)) {
+        trans_pos = Vector3D();
+      }*/
 
+      // populate lbsinfo
       LBSInfo joint_lbs;
       joint_lbs.blendPos = trans_pos;
       joint_lbs.distance = dist;
-
       joints_lbs[joint_no] = joint_lbs;
 
       inv_sum_weight += 1. / dist;
@@ -80,7 +82,7 @@ void Mesh::linearBlendSkinning(bool useCapsuleRadius) {
     // sum joints
     Vector3D newpos;
     for (auto lbs : joints_lbs) {
-      newpos += lbs.blendPos * ((1. / lbs.distance) / inv_sum_weight);
+      newpos += lbs.blendPos * (1. / (inv_sum_weight * lbs.distance)) ;
     }
 
     vertex_it->position = newpos;
@@ -91,12 +93,28 @@ void Mesh::linearBlendSkinning(bool useCapsuleRadius) {
 
 void Mesh::forward_euler(float timestep, float damping_factor) {
   // TODO (Animation) Task 4
+  VertexIter vi = mesh.verticesBegin();
 
-
+  for (vi ; vi != mesh.verticesEnd(); ++vi) {
+    float lap = vi->laplacian();
+    // damping
+    lap = lap - damping_factor * vi->velocity;
+    float old_vel = vi->velocity;
+    vi->velocity = vi->velocity + timestep * vi->laplacian();
+    vi->offset = vi->offset + timestep * old_vel;
+  }
 }
 
 void Mesh::symplectic_euler(float timestep, float damping_factor) {
   // TODO (Animation) Task 4
+  VertexIter vi = mesh.verticesBegin();
+
+  for (vi ; vi != mesh.verticesEnd(); ++vi) {
+    float lap = vi->laplacian();
+    lap = lap - damping_factor * vi->velocity;
+    vi->velocity = vi->velocity + timestep * vi->laplacian();
+    vi->offset = vi->offset + timestep * vi->velocity;
+  }  
 }
 
 void Mesh::resetWave() {

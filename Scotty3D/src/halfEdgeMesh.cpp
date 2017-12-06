@@ -640,7 +640,39 @@ BBox Halfedge::bounds() const { return edge()->bounds(); }
 
 float Vertex::laplacian() const {
   // TODO (Animation) Task 4
-  return 0.0;
+  float del_u = 0.0;
+  HalfedgeCIter origin_heIter = this->halfedge();
+  HalfedgeCIter i_heIter = origin_heIter;
+  float i_u, j_u;
+  float sum_u = 0.0;
+  
+  float angle_alpha, cotan_alpha;
+  float angle_beta, cotan_beta;
+
+  Vector3D v_alpha, v_beta, v_i, v_j;
+  int count = 0;
+  do {
+    // Offset
+    i_u = i_heIter->vertex()->offset;
+    j_u= i_heIter->twin()->vertex()->offset;
+    
+    // Calc cotans
+    v_alpha = i_heIter->next()->next()->vertex()->position;
+    v_beta = i_heIter->twin()->next()->next()->vertex()->position;
+    v_i = i_heIter->vertex()->position;
+    v_j = i_heIter->twin()->vertex()->position;
+
+    angle_alpha = angle3Vertex(v_i, v_alpha, v_j);
+    angle_beta = angle3Vertex(v_i, v_beta, v_j);
+
+    sum_u += (1. / tan(angle_alpha) + 1. / tan(angle_beta)) * (j_u - i_u);
+  //  cout << ++count << endl;
+    i_heIter = i_heIter->twin()->next();
+  } while (i_heIter != origin_heIter);
+  
+  sum_u /= 2.;
+
+  return sum_u;
 }
 
 void Vertex::getAxes(vector<Vector3D>& axes) const {
@@ -874,6 +906,13 @@ Info Halfedge::getInfo() {
   info.push_back(m8.str());
 
   return info;
+}
+
+float angle3Vertex(Vector3D &i, Vector3D &c, Vector3D &j) {
+  Vector3D ci = (i - c).unit();
+  Vector3D cj = (j - c).unit();
+  float costheta = dot(ci, cj);
+  return acos(costheta);
 }
 
 }  // namespace CMU462

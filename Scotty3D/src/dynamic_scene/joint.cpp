@@ -183,9 +183,9 @@ Vector3D Joint::getEndPosInWorld() {
   joint's transformation and translate along this joint's axis to get the end
   position in world coordinate frame.
   */
-
+  // need to apply rotation as well?
   Vector4D pos(getBasePosInWorld(), 1);
-  Matrix4x4 trans = Matrix4x4::translation(axis);
+  Matrix4x4 trans = Matrix4x4::translation(axis);// * getRotation();
 
   return (trans * pos).to3D();
 

@@ -25,6 +25,8 @@ class OSDText;
 class Viewer;
 class Timer;
 
+// Random helpers
+float angle3Vertex(Vector3D &i, Vector3D &c, Vector3D &j);
 } // namespace CMU462
 
 #endif // CMU462_H
