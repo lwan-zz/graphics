@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <sstream>
+#include <queue>
 
 #include "../static_scene/object.h"
 #include "../error_dialog.h"
@@ -48,81 +49,113 @@ Mesh::Mesh(Collada::PolymeshInfo &polyMesh, const Matrix4x4 &transform) {
 void Mesh::linearBlendSkinning(bool useCapsuleRadius) {
   // TODO (Animation) Task 3a, Task 3b
   //cout << "UseCapsuleRadius: " << useCapsuleRadius << endl;
+  // TODO (Animation) Task 3a, Task 3b
+
   for (VertexIter vertex_it = mesh.verticesBegin(); vertex_it != mesh.verticesEnd(); vertex_it++) {
     Vector4D pos(vertex_it->bindPosition, 1.);
-    vector<LBSInfo> joints_lbs; 
+    vector<LBSInfo> joints_lbs;
+    
     double inv_sum_weight = 0.;
-    //cout << "newvertex" << endl;
     for (auto joint_it : skeleton->joints) {
-      Matrix4x4 trans = joint_it->getTransformation();
-      //cout << "CapsuleRadius: " << joint_it->capsuleRadius << endl;
-
+      Matrix4x4 trans = (joint_it->getBindTransformation()).inv();
+      //trans.print();
       // get point on line, then find euclidean dist
-      Vector3D trans_pos = (trans * pos).to3D();
+      Vector3D trans_pos = (trans * pos).to3D(); //reverse
       Vector3D vec_v = trans_pos - joint_it->position;
-      double len = dot(vec_v, joint_it->axis);
+      Vector3D bone_seg = joint_it->getEndPosInWorld() - joint_it->getBasePosInWorld();
+      double len = dot(vec_v, bone_seg);
       Vector3D point = joint_it->position + joint_it->axis * len;
-      double dist = (point - trans_pos).norm();
-
-      //cout << "dist: " << dist <<  endl;
-      //trans_pos.print();
-      //vertex_it->position.print();
-      if (useCapsuleRadius) {
-        if (joint_it->capsuleRadius < dist) {
-          continue;
-        }
+      //cout << "joint pos: "; joint_it->position.print(); cout << endl;
+      //cout << "joint axis: "; joint_it->axis.print(); cout << endl;
+      //cout << "pos : " << pos << endl;
+      //cout << "bone_seg: " << bone_seg << endl;
+      //cout << "len: " << len << endl;
+      //cout << "point "; point.print(); cout << endl;
+      
+      
+      double dist = (point - trans_pos).norm(); // to line segment
+      if (point == trans_pos) {
+        dist = 0.;
       }
-      
-      inv_sum_weight += 1. / dist;
-      
-      // populate lbsinfo
-      LBSInfo joint_lbs;
-      joint_lbs.blendPos = trans_pos;
-      joint_lbs.distance = dist;
-      joints_lbs.push_back(joint_lbs);
-      
+
+      if (1) { //useCapsuleRadius
+        //if (joint_it->capsuleRadius < dist) {
+        //  continue;
+        //} else {
+          LBSInfo joint_lb;
+          joint_lb.blendPos = trans_pos;
+          joint_lb.distance = dist;
+          joints_lbs.push_back(joint_lb);
+          if (dist < EPS_D) { dist = 1.; }
+          inv_sum_weight += 1. / dist;
+          //cout << "dist " << dist << endl;;
+          //cout << "trans pos "; trans_pos.print(); cout << endl;
+
+        //}
+      }      
     }
 
-    
     // sum joints
     if (joints_lbs.size() > 0) {
-      //cout << "in capsule radius" << endl;
+      //cout << "joints_lbs.size(): " << joints_lbs.size() << endl;
+      //cout << "inv weight: " << inv_sum_weight << endl;
       Vector3D newpos;
       for (auto lbs : joints_lbs) {
-        newpos += lbs.blendPos * (1. / (inv_sum_weight * lbs.distance)) ;
-      }      
+        double weight =  (1. / lbs.distance) / inv_sum_weight;
+        newpos += weight * lbs.blendPos;
+      }
+      //cout << "vertex_it old: " << vertex_it->position << endl;
       vertex_it->position = newpos;
+      //cout << "vertex_it new: " << vertex_it->position << endl;
+      //getchar();
     }
-    //vertex_it->position.print();
-    //getchar();
   }
-
 }
 
 void Mesh::forward_euler(float timestep, float damping_factor) {
   // TODO (Animation) Task 4
-  VertexIter vi = mesh.verticesBegin();
+  queue<float> old_vels;
 
-  for (vi ; vi != mesh.verticesEnd(); ++vi) {
+  for (VertexIter vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi) {
     float lap = vi->laplacian();
     // damping
     lap = lap - damping_factor * vi->velocity;
     float old_vel = vi->velocity;
+    old_vels.push(old_vel);
     vi->velocity = vi->velocity + timestep * vi->laplacian();
-    vi->offset = vi->offset + timestep * old_vel;
+    
   }
+
+  for (VertexIter vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi) {
+    float lap = vi->laplacian();
+    float old_vel = old_vels.front();
+    // damping
+    lap = lap - damping_factor * old_vel;
+    vi->offset = vi->offset + timestep * old_vel;
+    old_vels.pop();        
+  }
+
 }
 
 void Mesh::symplectic_euler(float timestep, float damping_factor) {
   // TODO (Animation) Task 4
   VertexIter vi = mesh.verticesBegin();
 
-  for (vi ; vi != mesh.verticesEnd(); ++vi) {
+  for (VertexIter vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi) {
     float lap = vi->laplacian();
+    // damping
     lap = lap - damping_factor * vi->velocity;
     vi->velocity = vi->velocity + timestep * vi->laplacian();
+    
+  }
+
+  for (VertexIter vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi) {
+    float lap = vi->laplacian();
+    // damping
+    lap = lap - damping_factor * vi->velocity;
     vi->offset = vi->offset + timestep * vi->velocity;
-  }  
+  }
+
 }
 
 void Mesh::resetWave() {

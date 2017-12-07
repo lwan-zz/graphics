@@ -71,6 +71,17 @@ StaticScene::SceneObject* Joint::get_static_object() { return nullptr; }
 // The real calculation.
 void Joint::calculateAngleGradient(Joint* goalJoint, Vector3D q) {
   // TODO (Animation) task 2B
+  cout << "calcangle" << endl;
+  vector<Vector3D> axes;
+  goalJoint->getAxes(axes);
+
+  Matrix3x3 jacobian;
+
+  for (auto& axis : axes) {
+    axis.print();
+  }
+
+  getchar();
 }
 
 // The constructor sets the dynamic angle and velocity of

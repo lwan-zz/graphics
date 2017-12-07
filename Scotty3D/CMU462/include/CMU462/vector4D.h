@@ -124,6 +124,11 @@ class Vector4D {
     return sqrt( x*x + y*y + z*z + w*w );
   }
 
+  // print
+  inline void print( void ) {
+    std::cout << x << " " << y << " " << z << " " << w << std::endl;
+  }
+
   /**
    * Returns Euclidean length squared.
    */
