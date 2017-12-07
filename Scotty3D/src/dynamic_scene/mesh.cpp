@@ -52,46 +52,54 @@ void Mesh::linearBlendSkinning(bool useCapsuleRadius) {
   // TODO (Animation) Task 3a, Task 3b
 
   for (VertexIter vertex_it = mesh.verticesBegin(); vertex_it != mesh.verticesEnd(); vertex_it++) {
-    Vector4D pos(vertex_it->bindPosition, 1.);
+    Vector3D pos = vertex_it->bindPosition;
     vector<LBSInfo> joints_lbs;
     
     double inv_sum_weight = 0.;
     for (auto joint_it : skeleton->joints) {
       Matrix4x4 trans = (joint_it->getBindTransformation()).inv();
       //trans.print();
+      //joint_it->getRotation().print();
+      // bring to local
+      Vector4D trans_pos = trans * Vector4D(pos, 1.);
+      // apply rotation, bring back to global
+      trans_pos = joint_it->getTransformation() * joint_it->getRotation() * trans_pos;
+
+      //pos.print();
+      Vector3D p = trans_pos.to3D();
+      //p.print();
+      //trans.print();
       // get point on line, then find euclidean dist
-      Vector3D trans_pos = (trans * pos).to3D(); //reverse
-      Vector3D vec_v = trans_pos - joint_it->position;
-      Vector3D bone_seg = joint_it->getEndPosInWorld() - joint_it->getBasePosInWorld();
-      double len = dot(vec_v, bone_seg);
-      Vector3D point = joint_it->position + joint_it->axis * len;
-      //cout << "joint pos: "; joint_it->position.print(); cout << endl;
-      //cout << "joint axis: "; joint_it->axis.print(); cout << endl;
-      //cout << "pos : " << pos << endl;
-      //cout << "bone_seg: " << bone_seg << endl;
-      //cout << "len: " << len << endl;
-      //cout << "point "; point.print(); cout << endl;
-      
-      
-      double dist = (point - trans_pos).norm(); // to line segment
-      if (point == trans_pos) {
+      //Vector3D trans_pos = (trans * pos).to3D(); //reverse
+      Vector3D base = joint_it->getBasePosInWorld();
+      Vector3D end = joint_it->getEndPosInWorld();
+      double len2 = pow((base - end).norm(), 2);
+      double dist;
+      if (len2 == 0.) {
         dist = 0.;
+      } else {
+       double t = max(0., min(1., dot((p - base), (end - base)) / len2 ));
+       Vector3D proj = base + t * (end - base);
+       dist = (proj - p).norm();
       }
 
-      if (1) { //useCapsuleRadius
-        //if (joint_it->capsuleRadius < dist) {
-        //  continue;
-        //} else {
+      //cout << dist << endl;
+      //getchar();
+
+      if (useCapsuleRadius) { //
+        if (joint_it->capsuleRadius < dist) {
+          continue;
+        } else {
           LBSInfo joint_lb;
-          joint_lb.blendPos = trans_pos;
+          joint_lb.blendPos = p;
           joint_lb.distance = dist;
           joints_lbs.push_back(joint_lb);
-          if (dist < EPS_D) { dist = 1.; }
+          //if (dist < EPS_D) { dist = 1.; }
           inv_sum_weight += 1. / dist;
           //cout << "dist " << dist << endl;;
           //cout << "trans pos "; trans_pos.print(); cout << endl;
 
-        //}
+        }
       }      
     }
 
@@ -122,8 +130,7 @@ void Mesh::forward_euler(float timestep, float damping_factor) {
     lap = lap - damping_factor * vi->velocity;
     float old_vel = vi->velocity;
     old_vels.push(old_vel);
-    vi->velocity = vi->velocity + timestep * vi->laplacian();
-    
+    vi->velocity = vi->velocity + timestep * vi->laplacian(); 
   }
 
   for (VertexIter vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi) {
@@ -146,7 +153,6 @@ void Mesh::symplectic_euler(float timestep, float damping_factor) {
     // damping
     lap = lap - damping_factor * vi->velocity;
     vi->velocity = vi->velocity + timestep * vi->laplacian();
-    
   }
 
   for (VertexIter vi = mesh.verticesBegin(); vi != mesh.verticesEnd(); ++vi) {

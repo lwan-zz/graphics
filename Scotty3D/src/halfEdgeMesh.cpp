@@ -640,10 +640,10 @@ BBox Halfedge::bounds() const { return edge()->bounds(); }
 
 float Vertex::laplacian() const {
   // TODO (Animation) Task 4
-  float del_u = 0.0;
   HalfedgeCIter origin_heIter = this->halfedge();
   HalfedgeCIter i_heIter = origin_heIter;
   float i_u, j_u;
+  float del_u = 0.0;
   float sum_u = 0.0;
   
   float angle_alpha, cotan_alpha;
@@ -669,7 +669,7 @@ float Vertex::laplacian() const {
   //  cout << ++count << endl;
     i_heIter = i_heIter->twin()->next();
   } while (i_heIter != origin_heIter);
-  
+
   sum_u /= 2.;
 
   return sum_u;

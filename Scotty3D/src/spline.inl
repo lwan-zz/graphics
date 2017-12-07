@@ -138,8 +138,6 @@ inline T Spline<T>::evaluate(double time, int derivative) {
   return output;
 }
 
-
-
 // Removes the knot closest to the given time,
 //    within the given tolerance..
 // returns true iff a knot was removed.

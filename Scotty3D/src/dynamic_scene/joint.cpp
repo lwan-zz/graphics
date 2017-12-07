@@ -71,22 +71,23 @@ StaticScene::SceneObject* Joint::get_static_object() { return nullptr; }
 // The real calculation.
 void Joint::calculateAngleGradient(Joint* goalJoint, Vector3D q) {
   // TODO (Animation) task 2B
-  cout << "calcangle" << endl;
   vector<Vector3D> axes;
-  goalJoint->getAxes(axes);
+  this->getAxes(axes);
 
-  Matrix3x3 jacobian;
+  vector<Vector3D> jacobians(3);
+  Vector3D diff = goalJoint->getEndPosInWorld() - q;
 
-  for (auto& axis : axes) {
-    axis.print();
+  for (int axis_idx = 0; axis_idx != 3; ++axis_idx) {
+    Vector3D rxp = cross(axes[axis_idx], (goalJoint->getEndPosInWorld() - this->getBasePosInWorld()));
+    jacobians[axis_idx] = rxp;
+    ikAngleGradient[axis_idx] += dot(diff, rxp);
   }
 
-  getchar();
 }
 
 // The constructor sets the dynamic angle and velocity of
 // the joint to zero (at a perfect vertical with no motion)
-Joint::Joint(Skeleton* s) : skeleton(s), capsuleRadius(0.05), renderScale(1.0) {
+Joint::Joint(Skeleton* s) : skeleton(s), capsuleRadius(0.3), renderScale(1.0) {
   scale = Vector3D(1., 1., 1.);
   scales.setValue(0, scale);
 }
@@ -156,7 +157,7 @@ Matrix4x4 Joint::getTransformation() {
   Matrix4x4 T = Matrix4x4::identity();
 
   for (Joint* j = parent; j != nullptr; j = j->parent) {
-    T = Matrix4x4::translation(j->axis) * j->getRotation() * T;
+    T = j->getRotation() * Matrix4x4::translation(j->axis) * T;
   }
   
   T = skeleton->mesh->getTransformation() * T;
@@ -195,10 +196,12 @@ Vector3D Joint::getEndPosInWorld() {
   position in world coordinate frame.
   */
   // need to apply rotation as well?
-  Vector4D pos(getBasePosInWorld(), 1);
-  Matrix4x4 trans = Matrix4x4::translation(axis);// * getRotation();
+  //Vector4D pos(getBasePosInWorld(), 1);
 
-  return (trans * pos).to3D();
+  Matrix4x4 tf = getTransformation() * getRotation() * Matrix4x4::translation(axis);
+  //Matrix4x4 trans = Matrix4x4::translation(axis);// * getRotation();
+  Vector4D pos = (position, 1);
+  return (tf * pos).to3D();
 
 }
 }  // namespace DynamicScene
